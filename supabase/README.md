@@ -1,5 +1,20 @@
 # Setup de Supabase para huellar
 
+## Estado actual: ya está todo aplicado ✅
+
+El proyecto `huellas` (`qhdvewichgadzcujhnhq`, región `ca-central-1`) ya tiene:
+
+- Las 4 migraciones corridas (`0001_init`, `0002_seed`, `0003_harden_security`,
+  `0004_performance`): 10 tablas, RLS en todas, triggers de puntos, índices en
+  foreign keys y policies optimizadas (revisado con el Security y Performance
+  Advisor de Supabase — sin warnings pendientes).
+- 9 lugares, 4 beneficios y 1 huella QR de ejemplo cargados.
+- `.env` local con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+  del proyecto (no está en git — armalo vos en tu compu, ver abajo).
+
+Si en algún momento creás el proyecto de nuevo desde cero (o uno adicional para
+otro entorno), estos son los pasos:
+
 ## 1. Crear el proyecto
 
 1. Andá a [supabase.com](https://supabase.com) → **New project**.
@@ -10,34 +25,33 @@
 
 En el dashboard de tu proyecto, andá a **SQL Editor → New query** y corré, en este orden:
 
-1. Pegá y ejecutá todo `supabase/migrations/0001_init.sql`.
-2. Pegá y ejecutá todo `supabase/migrations/0002_seed.sql`.
+1. `supabase/migrations/0001_init.sql`
+2. `supabase/migrations/0002_seed.sql`
+3. `supabase/migrations/0003_harden_security.sql`
+4. `supabase/migrations/0004_performance.sql`
 
 Esto crea las tablas (`profiles`, `places`, `checkins`, `points_events`, `qr_codes`,
 `qr_redemptions`, `posts`, `post_likes`, `benefits`, `redemptions`), las políticas de
-Row Level Security, los triggers que calculan los puntos en el servidor, y carga los
-9 lugares + 4 beneficios + 1 huella QR de ejemplo que ya usa la app.
+Row Level Security, los triggers que calculan los puntos en el servidor, los índices
+y carga los 9 lugares + 4 beneficios + 1 huella QR de ejemplo.
 
-## 3. Conectar la app
+## 3. Conectar la app en tu compu
 
-En **Project Settings → API** copiá:
-
-- **Project URL**
-- **anon / public key** (nunca la `service_role`, esa es solo para scripts de administración)
-
-Creá un archivo `.env` en la raíz del proyecto (junto a `package.json`), a partir de
-`.env.example`:
+Como `.env` no se sube al repo (tiene tus credenciales), tenés que crearlo vos
+localmente cuando clones el proyecto:
 
 ```bash
 cp .env.example .env
 ```
 
-Y completá:
+Y completar con los valores de **Project Settings → API** de tu proyecto:
 
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key-publica
+EXPO_PUBLIC_SUPABASE_URL=https://qhdvewichgadzcujhnhq.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 ```
+
+(Nunca la `service_role`, esa es solo para scripts de administración.)
 
 Reiniciá `npx expo start` después de crear/editar `.env` (Expo solo lee las
 variables `EXPO_PUBLIC_*` al arrancar).
@@ -57,11 +71,17 @@ el link que le llega por mail antes de poder iniciar sesión.
 - `src/lib/supabase.ts`: cliente de Supabase con sesión persistida (AsyncStorage).
 - `src/lib/database.types.ts`: tipos TypeScript del esquema (a mano; si instalás la
   Supabase CLI localmente podés regenerarlos con
-  `npx supabase gen types typescript --project-id <id> > src/lib/database.types.ts`).
+  `npx supabase gen types typescript --project-id qhdvewichgadzcujhnhq > src/lib/database.types.ts`).
 - `src/store/useAuthStore.ts`: sesión, perfil, `signUp`, `signIn`, `signOut`.
 - `app/auth/signup.tsx` y `app/auth/login.tsx`: pantallas reales de registro/login.
 - `app/index.tsx`: si ya hay sesión guardada, entra directo a la app; si no, manda a
   onboarding.
+
+Probado en este entorno con datos reales: el signup llama correctamente a
+`https://qhdvewichgadzcujhnhq.supabase.co/auth/v1/signup` con el payload esperado.
+Esta sandbox de desarrollo tiene bloqueada la salida de red hacia Supabase (por
+política del entorno en la nube), así que la confirmación end-to-end hay que
+hacerla desde tu celu/compu, que sí tienen internet normal.
 
 ## Qué falta conectar (próximos bloques)
 
