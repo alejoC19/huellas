@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../src/components/Button';
-import { PawIcon } from '../src/components/PawIcon';
+import { PawBadge } from '../src/components/PawBadge';
 import { colors, fonts, fontSizes, spacing } from '../src/theme';
 
 export default function Onboarding() {
@@ -12,7 +12,7 @@ export default function Onboarding() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.isotipo}>
-            <PawIcon size={72} />
+            <PawBadge size={96} />
           </View>
 
           <View style={styles.textBlock}>
@@ -28,12 +28,12 @@ export default function Onboarding() {
             <Button
               label="Empezar a huellar"
               variant="primary"
-              onPress={() => router.replace('/(tabs)')}
+              onPress={() => router.replace('/loading')}
             />
             <Button
               label="Ya tengo cuenta"
               variant="secondary"
-              onPress={() => router.replace('/(tabs)')}
+              onPress={() => router.replace('/loading')}
               style={styles.secondaryButton}
             />
           </View>

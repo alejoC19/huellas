@@ -1,4 +1,4 @@
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Ellipse, Path } from 'react-native-svg';
 
 import { colors } from '../theme';
 
@@ -9,25 +9,13 @@ type Props = {
 
 export function PawIcon({ size = 40, color = colors.verdeHuella }: Props) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <Ellipse cx={21} cy={38} rx={11} ry={15} fill={color} transform="rotate(-25 21 38)" />
+      <Ellipse cx={38} cy={21} rx={10} ry={16} fill={color} transform="rotate(-8 38 21)" />
+      <Ellipse cx={62} cy={21} rx={10} ry={16} fill={color} transform="rotate(8 62 21)" />
+      <Ellipse cx={79} cy={38} rx={11} ry={15} fill={color} transform="rotate(25 79 38)" />
       <Path
-        d="M20 30c4.4 0 8 4.5 8 10s-3.6 10-8 10-8-4.5-8-10 3.6-10 8-10Z"
-        fill={color}
-      />
-      <Path
-        d="M44 30c4.4 0 8 4.5 8 10s-3.6 10-8 10-8-4.5-8-10 3.6-10 8-10Z"
-        fill={color}
-      />
-      <Path
-        d="M14 14c3.3 0 6 3.6 6 8s-2.7 8-6 8-6-3.6-6-8 2.7-8 6-8Z"
-        fill={color}
-      />
-      <Path
-        d="M50 14c3.3 0 6 3.6 6 8s-2.7 8-6 8-6-3.6-6-8 2.7-8 6-8Z"
-        fill={color}
-      />
-      <Path
-        d="M32 34c7 0 14 5.8 14 13.5S39.8 56 32 56s-14-4.8-14-8.5S25 34 32 34Z"
+        d="M50 90c-16 0-29-10-29-22 0-13 13-23 29-23s29 10 29 23c0 12-13 22-29 22Z"
         fill={color}
       />
     </Svg>
