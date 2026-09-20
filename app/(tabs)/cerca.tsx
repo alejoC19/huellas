@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,9 +22,14 @@ const COLEGIALES_REGION: MapRegion = {
 const CATEGORIES: PlaceCategory[] = ['plaza', 'cafe', 'veterinaria'];
 
 export default function Cerca() {
+  const params = useLocalSearchParams<{ category?: string }>();
+  const initialCategory = CATEGORIES.includes(params.category as PlaceCategory)
+    ? (params.category as PlaceCategory)
+    : null;
+
   const mapRef = useRef<MapSectionHandle>(null);
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<PlaceCategory | null>(null);
+  const [category, setCategory] = useState<PlaceCategory | null>(initialCategory);
   const [selectedId, setSelectedId] = useState<string>(PLACES[0].id);
 
   const filteredPlaces = useMemo(() => {
