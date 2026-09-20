@@ -28,12 +28,12 @@ export default function Onboarding() {
             <Button
               label="Empezar a huellar"
               variant="primary"
-              onPress={() => router.replace('/loading')}
+              onPress={() => router.push('/auth/signup')}
             />
             <Button
               label="Ya tengo cuenta"
               variant="secondary"
-              onPress={() => router.replace('/loading')}
+              onPress={() => router.push('/auth/login')}
               style={styles.secondaryButton}
             />
           </View>

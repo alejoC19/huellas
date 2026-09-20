@@ -38,6 +38,8 @@ export default function RootLayout() {
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="onboarding" />
+          <Stack.Screen name="auth/signup" />
+          <Stack.Screen name="auth/login" />
           <Stack.Screen name="loading" />
           <Stack.Screen name="(tabs)" />
         </Stack>
