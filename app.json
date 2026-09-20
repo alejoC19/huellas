@@ -27,7 +27,19 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "huellar usa la cámara para que dejes tu huella con una foto en el lugar."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "huellar usa tu ubicación para mostrarte lugares cerca tuyo y confirmar que estás en el lugar al dejar una huella."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
