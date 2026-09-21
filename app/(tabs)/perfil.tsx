@@ -219,6 +219,12 @@ export default function Perfil() {
               onPress={() => router.push('/beneficios')}
               style={styles.benefitsButton}
             />
+            <Button
+              label="Historial de puntos"
+              variant="ghost"
+              onPress={() => router.push('/perfil/puntos')}
+              style={styles.benefitsButton}
+            />
           </Card>
         </ScrollView>
       </SafeAreaView>
