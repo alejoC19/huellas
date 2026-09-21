@@ -153,6 +153,9 @@ export default function Cerca() {
         </View>
 
         <View style={styles.rightControls}>
+          <Pressable style={styles.locateButton} onPress={() => router.push('/qr/escanear')}>
+            <Ionicons name="qr-code" size={20} color={colors.azulVereda} />
+          </Pressable>
           <Pressable style={styles.locateButton} onPress={goToMyLocation}>
             <Ionicons name="locate" size={20} color={colors.azulVereda} />
           </Pressable>
@@ -204,6 +207,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: spacing.lg,
   },
   searchBar: {
@@ -238,6 +246,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: spacing.lg,
     bottom: 160,
+    gap: spacing.sm,
   },
   locateButton: {
     width: 44,

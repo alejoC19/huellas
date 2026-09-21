@@ -123,6 +123,14 @@ buena práctica.
 - Favoritos: el corazón en `app/lugar/[id].tsx` inserta/borra en la tabla
   `favorites` (RLS: cada usuario solo ve/toca los suyos) y la pestaña
   "Favoritos" de `app/(tabs)/perfil.tsx` lista los lugares marcados.
+- `app/qr/escanear.tsx`: escaneo real de la huella QR escondida (+75 pts) con
+  `expo-camera` (`CameraView` + `barcodeScannerSettings`). Busca el código en
+  `qr_codes`, inserta en `qr_redemptions` (el trigger de la base suma los
+  puntos; el `unique(user_id, qr_code_id)` evita duplicados y se traduce en un
+  mensaje de "ya escaneaste esto"). Accesible desde el botón QR del mapa
+  (`Cerca`) y desde el tile "Huella QR escondida" en Beneficios. El código de
+  ejemplo sembrado es `HUELLA-ALBERTI-01` (ver `0002_seed.sql`) — para probar,
+  generá un QR con ese texto exacto.
 
 Probado en este entorno con datos reales (incluyendo cámara con un dispositivo de
 video simulado, e interceptando las respuestas de Supabase con datos de prueba para
@@ -137,6 +145,5 @@ sí tienen internet normal.
 
 - "Siguiendo" en Comunidad y "Agenda" en Perfil muestran un estado "en
   construcción" honesto — no hay sistema de seguidores ni de agenda todavía.
-- Las reseñas verificadas (+30 pts) y la huella QR escondida (+75 pts) están
-  con su lógica de puntos lista en la base (`points_events`, `qr_codes`,
-  `qr_redemptions`), pero todavía no tienen pantalla propia en la app.
+- Las reseñas verificadas (+30 pts) todavía no tienen pantalla propia (la
+  huella QR escondida ya sí, ver arriba).

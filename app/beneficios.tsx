@@ -22,10 +22,15 @@ import { colors, fonts, fontSizes, radii, spacing } from '../src/theme';
 
 type Filter = 'todos' | 'alcance' | 'colegiales';
 
-const WAYS_TO_EARN = [
+const WAYS_TO_EARN: Array<{
+  points: number;
+  label: string;
+  color: string;
+  href?: '/qr/escanear';
+}> = [
   { points: 50, label: 'Check-in con foto', color: colors.verdeHuella },
   { points: 30, label: 'Reseña verificada', color: colors.verdeParque },
-  { points: 75, label: 'Huella QR escondida', color: colors.amarilloSolera },
+  { points: 75, label: 'Huella QR escondida', color: colors.amarilloSolera, href: '/qr/escanear' },
 ];
 
 export default function Beneficios() {
@@ -166,14 +171,21 @@ export default function Beneficios() {
               <View style={styles.earnSection}>
                 <Text style={styles.earnTitle}>Cómo sumar más rápido</Text>
                 <View style={styles.earnRow}>
-                  {WAYS_TO_EARN.map((way) => (
-                    <View key={way.label} style={styles.earnTile}>
-                      <View style={[styles.earnBadge, { backgroundColor: way.color }]}>
-                        <Text style={styles.earnBadgeText}>+{way.points}</Text>
-                      </View>
-                      <Text style={styles.earnLabel}>{way.label}</Text>
-                    </View>
-                  ))}
+                  {WAYS_TO_EARN.map((way) => {
+                    const Wrapper = way.href ? Pressable : View;
+                    return (
+                      <Wrapper
+                        key={way.label}
+                        style={styles.earnTile}
+                        onPress={way.href ? () => router.push(way.href!) : undefined}
+                      >
+                        <View style={[styles.earnBadge, { backgroundColor: way.color }]}>
+                          <Text style={styles.earnBadgeText}>+{way.points}</Text>
+                        </View>
+                        <Text style={styles.earnLabel}>{way.label}</Text>
+                      </Wrapper>
+                    );
+                  })}
                 </View>
               </View>
             }
