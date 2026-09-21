@@ -225,6 +225,12 @@ export default function Perfil() {
               onPress={() => router.push('/perfil/puntos')}
               style={styles.benefitsButton}
             />
+            <Button
+              label="Mis canjes"
+              variant="ghost"
+              onPress={() => router.push('/perfil/canjes')}
+              style={styles.benefitsButton}
+            />
           </Card>
         </ScrollView>
       </SafeAreaView>
