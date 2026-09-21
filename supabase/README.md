@@ -4,13 +4,14 @@
 
 El proyecto `huellas` (`qhdvewichgadzcujhnhq`, región `ca-central-1`) ya tiene:
 
-- Las 8 migraciones corridas (`0001_init` a `0008_favorites`):
-  11 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
+- Las 9 migraciones corridas (`0001_init` a `0009_follows`):
+  12 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
   optimizadas, los buckets de Storage `checkins` y `avatars` (públicos para
   lectura, cada usuario sube solo a su propia carpeta), un campo `rating`
   opcional (1-5) en `checkins`, la vista `place_stats` (huellas + promedio de
-  estrellas reales por lugar) y la tabla `favorites` (lugares favoritos,
-  privada por usuario) — revisado con el Security y Performance Advisor
+  estrellas reales por lugar), la tabla `favorites` (lugares favoritos,
+  privada por usuario) y la tabla `follows` (seguir usuarios, pública para
+  lectura) — revisado con el Security y Performance Advisor
   de Supabase. Sin warnings pendientes salvo dos que son config manual del
   dashboard, no de esquema (ver abajo).
 - 9 lugares, 4 beneficios y 1 huella QR de ejemplo cargados.
@@ -38,6 +39,7 @@ En el dashboard de tu proyecto, andá a **SQL Editor → New query** y corré, e
 6. `supabase/migrations/0006_checkin_ratings_and_place_stats.sql`
 7. `supabase/migrations/0007_avatars_storage.sql`
 8. `supabase/migrations/0008_favorites.sql`
+9. `supabase/migrations/0009_follows.sql`
 
 Esto crea las tablas (`profiles`, `places`, `checkins`, `points_events`, `qr_codes`,
 `qr_redemptions`, `posts`, `post_likes`, `benefits`, `redemptions`), las políticas de
@@ -131,6 +133,11 @@ buena práctica.
   (`Cerca`) y desde el tile "Huella QR escondida" en Beneficios. El código de
   ejemplo sembrado es `HUELLA-ALBERTI-01` (ver `0002_seed.sql`) — para probar,
   generá un QR con ese texto exacto.
+- Siguiendo: la tabla `follows` (pública para lectura, cada usuario
+  sigue/deja de seguir solo por sí mismo) conecta el pill "Seguir"/"Siguiendo"
+  que aparece en cada post de Comunidad (excepto los propios) con el filtro
+  "Siguiendo" de los chips, que ahora muestra de verdad solo los posts de la
+  gente que seguís.
 
 Probado en este entorno con datos reales (incluyendo cámara con un dispositivo de
 video simulado, e interceptando las respuestas de Supabase con datos de prueba para
@@ -143,7 +150,10 @@ sí tienen internet normal.
 
 ## Qué falta (opcional, no bloquea la tesis)
 
-- "Siguiendo" en Comunidad y "Agenda" en Perfil muestran un estado "en
-  construcción" honesto — no hay sistema de seguidores ni de agenda todavía.
+- "Agenda" en Perfil muestra un estado "en construcción" honesto — no hay
+  feature de agenda todavía ("Siguiendo" en Comunidad ya es real, ver arriba).
 - Las reseñas verificadas (+30 pts) todavía no tienen pantalla propia (la
   huella QR escondida ya sí, ver arriba).
+- No hay notificaciones (la campanita de Inicio es decorativa) ni pantalla de
+  perfil público de otro usuario — seguir a alguien se hace desde el pill del
+  post, no hay una vista "perfil de fulano" para explorar antes de seguir.

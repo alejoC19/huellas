@@ -33,6 +33,7 @@ type FeedPostWithGeo = FeedPost & {
 
 type PostRow = {
   id: string;
+  user_id: string;
   created_at: string;
   text: string | null;
   image_url: string | null;
@@ -48,6 +49,7 @@ export default function Comunidad() {
 
   const [posts, setPosts] = useState<FeedPostWithGeo[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FeedFilter>(null);
@@ -58,7 +60,7 @@ export default function Comunidad() {
       const { data } = await supabase
         .from('posts')
         .select(
-          'id, created_at, text, image_url, likes_count, comments_count, checkin_id, profiles(pet_name, avatar_url), places(id, name, neighborhood, latitude, longitude)'
+          'id, user_id, created_at, text, image_url, likes_count, comments_count, checkin_id, profiles(pet_name, avatar_url), places(id, name, neighborhood, latitude, longitude)'
         )
         .order('created_at', { ascending: false })
         .limit(30);
@@ -67,6 +69,7 @@ export default function Comunidad() {
       setPosts(
         rows.map((row) => ({
           id: row.id,
+          userId: row.user_id,
           createdAt: row.created_at,
           text: row.text ?? '',
           imageUrl: row.image_url,
@@ -84,11 +87,12 @@ export default function Comunidad() {
       );
 
       if (session) {
-        const { data: likes } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', session.user.id);
+        const [{ data: likes }, { data: follows }] = await Promise.all([
+          supabase.from('post_likes').select('post_id').eq('user_id', session.user.id),
+          supabase.from('follows').select('following_id').eq('follower_id', session.user.id),
+        ]);
         setLikedIds(new Set((likes ?? []).map((row) => row.post_id)));
+        setFollowingIds(new Set((follows ?? []).map((row) => row.following_id)));
       }
     } finally {
       setLoading(false);
@@ -139,10 +143,33 @@ export default function Comunidad() {
     }
   };
 
-  const visiblePosts = useMemo(() => {
-    if (filter === 'siguiendo') return [];
+  const toggleFollow = async (authorId: string) => {
+    if (!session) return;
+    const isFollowing = followingIds.has(authorId);
 
+    setFollowingIds((prev) => {
+      const next = new Set(prev);
+      if (isFollowing) next.delete(authorId);
+      else next.add(authorId);
+      return next;
+    });
+
+    if (isFollowing) {
+      await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', session.user.id)
+        .eq('following_id', authorId);
+    } else {
+      await supabase.from('follows').insert({ follower_id: session.user.id, following_id: authorId });
+    }
+  };
+
+  const visiblePosts = useMemo(() => {
     let list = posts;
+    if (filter === 'siguiendo') {
+      list = list.filter((post) => followingIds.has(post.userId));
+    }
     if (filter === 'colegiales') {
       list = list.filter((post) => post.placeNeighborhood === 'Colegiales');
     }
@@ -160,7 +187,7 @@ export default function Comunidad() {
       });
     }
     return list;
-  }, [posts, filter, userLocation]);
+  }, [posts, filter, followingIds, userLocation]);
 
   return (
     <View style={styles.container}>
@@ -190,18 +217,13 @@ export default function Comunidad() {
 
         {loading ? (
           <ActivityIndicator style={styles.loader} color={colors.verdeParque} />
-        ) : filter === 'siguiendo' ? (
-          <Card style={styles.emptyCard}>
-            <PawIcon size={28} color={colors.verdeParque} />
-            <Text style={styles.emptyText}>
-              Todavía no seguís a nadie. Esta función está en construcción.
-            </Text>
-          </Card>
         ) : visiblePosts.length === 0 ? (
           <Card style={styles.emptyCard}>
             <PawIcon size={28} color={colors.verdeParque} />
             <Text style={styles.emptyText}>
-              Todavía no hay huellas en la comunidad. ¡Dejá la primera!
+              {filter === 'siguiendo'
+                ? 'Todavía no seguís a nadie. Tocá "Seguir" en un post para empezar.'
+                : 'Todavía no hay huellas en la comunidad. ¡Dejá la primera!'}
             </Text>
           </Card>
         ) : (
@@ -227,6 +249,9 @@ export default function Comunidad() {
                 onViewPlace={() => {
                   if (item.placeId) router.push(`/lugar/${item.placeId}`);
                 }}
+                isOwnPost={item.userId === session?.user.id}
+                following={followingIds.has(item.userId)}
+                onToggleFollow={() => toggleFollow(item.userId)}
               />
             )}
           />

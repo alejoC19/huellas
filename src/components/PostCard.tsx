@@ -6,6 +6,7 @@ import { Avatar } from './Avatar';
 
 export type FeedPost = {
   id: string;
+  userId: string;
   createdAt: string;
   text: string;
   imageUrl: string | null;
@@ -24,9 +25,21 @@ type Props = {
   timeLabel: string;
   onToggleLike: () => void;
   onViewPlace?: () => void;
+  isOwnPost?: boolean;
+  following?: boolean;
+  onToggleFollow?: () => void;
 };
 
-export function PostCard({ post, liked, timeLabel, onToggleLike, onViewPlace }: Props) {
+export function PostCard({
+  post,
+  liked,
+  timeLabel,
+  onToggleLike,
+  onViewPlace,
+  isOwnPost,
+  following,
+  onToggleFollow,
+}: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -37,6 +50,16 @@ export function PostCard({ post, liked, timeLabel, onToggleLike, onViewPlace }: 
             {post.placeName} · {post.placeNeighborhood} · {timeLabel}
           </Text>
         </View>
+        {!isOwnPost && onToggleFollow && (
+          <Pressable
+            style={[styles.followPill, following && styles.followPillActive]}
+            onPress={onToggleFollow}
+          >
+            <Text style={[styles.followPillText, following && styles.followPillTextActive]}>
+              {following ? 'Siguiendo' : 'Seguir'}
+            </Text>
+          </Pressable>
+        )}
         {post.earnedCheckinPoints && (
           <View style={styles.pointsBadge}>
             <Text style={styles.pointsBadgeText}>+50</Text>
@@ -97,6 +120,25 @@ const styles = StyleSheet.create({
   meta: {
     fontFamily: fonts.textRegular,
     fontSize: fontSizes.xs,
+    color: colors.textMuted,
+  },
+  followPill: {
+    borderWidth: 1,
+    borderColor: colors.verdeParque,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  followPillActive: {
+    backgroundColor: colors.cremaBase,
+    borderColor: colors.border,
+  },
+  followPillText: {
+    fontFamily: fonts.textSemiBold,
+    fontSize: fontSizes.xs,
+    color: colors.verdeParque,
+  },
+  followPillTextActive: {
     color: colors.textMuted,
   },
   pointsBadge: {
