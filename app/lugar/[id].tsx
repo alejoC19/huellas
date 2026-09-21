@@ -10,6 +10,7 @@ import { PawIcon } from '../../src/components/PawIcon';
 import { StarRating } from '../../src/components/StarRating';
 import { Place } from '../../src/data/places';
 import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import { colors, fonts, fontSizes, radii, spacing } from '../../src/theme';
 import { timeAgo } from '../../src/utils/time';
 
@@ -33,9 +34,12 @@ type RecentCheckin = {
 
 export default function LugarDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const session = useAuthStore((state) => state.session);
   const [place, setPlace] = useState<Place | null>(null);
   const [recent, setRecent] = useState<RecentCheckin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [favorite, setFavorite] = useState(false);
+  const [togglingFavorite, setTogglingFavorite] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -58,6 +62,16 @@ export default function LugarDetalle() {
             .order('created_at', { ascending: false })
             .limit(4),
         ]);
+
+        if (session) {
+          const { data: favoriteRow } = await supabase
+            .from('favorites')
+            .select('place_id')
+            .eq('place_id', id)
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          if (mounted) setFavorite(Boolean(favoriteRow));
+        }
 
         if (!mounted) return;
 
@@ -97,7 +111,27 @@ export default function LugarDetalle() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, session]);
+
+  const toggleFavorite = async () => {
+    if (!session || !place || togglingFavorite) return;
+    setTogglingFavorite(true);
+    const next = !favorite;
+    setFavorite(next);
+    try {
+      if (next) {
+        await supabase.from('favorites').insert({ place_id: place.id, user_id: session.user.id });
+      } else {
+        await supabase
+          .from('favorites')
+          .delete()
+          .eq('place_id', place.id)
+          .eq('user_id', session.user.id);
+      }
+    } finally {
+      setTogglingFavorite(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -124,8 +158,12 @@ export default function LugarDetalle() {
             <Pressable style={styles.iconButton} onPress={() => router.back()}>
               <Ionicons name="chevron-back" size={22} color={colors.textOnDark} />
             </Pressable>
-            <Pressable style={styles.iconButton}>
-              <Ionicons name="heart-outline" size={20} color={colors.textOnDark} />
+            <Pressable style={styles.iconButton} onPress={toggleFavorite} disabled={togglingFavorite}>
+              <Ionicons
+                name={favorite ? 'heart' : 'heart-outline'}
+                size={20}
+                color={favorite ? '#E38585' : colors.textOnDark}
+              />
             </Pressable>
           </View>
           <View style={styles.headerPaws}>

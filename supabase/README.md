@@ -4,12 +4,13 @@
 
 El proyecto `huellas` (`qhdvewichgadzcujhnhq`, región `ca-central-1`) ya tiene:
 
-- Las 7 migraciones corridas (`0001_init` a `0007_avatars_storage`):
-  10 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
+- Las 8 migraciones corridas (`0001_init` a `0008_favorites`):
+  11 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
   optimizadas, los buckets de Storage `checkins` y `avatars` (públicos para
   lectura, cada usuario sube solo a su propia carpeta), un campo `rating`
-  opcional (1-5) en `checkins` y la vista `place_stats` (huellas + promedio de
-  estrellas reales por lugar) — revisado con el Security y Performance Advisor
+  opcional (1-5) en `checkins`, la vista `place_stats` (huellas + promedio de
+  estrellas reales por lugar) y la tabla `favorites` (lugares favoritos,
+  privada por usuario) — revisado con el Security y Performance Advisor
   de Supabase. Sin warnings pendientes salvo dos que son config manual del
   dashboard, no de esquema (ver abajo).
 - 9 lugares, 4 beneficios y 1 huella QR de ejemplo cargados.
@@ -36,6 +37,7 @@ En el dashboard de tu proyecto, andá a **SQL Editor → New query** y corré, e
 5. `supabase/migrations/0005_checkins_storage.sql`
 6. `supabase/migrations/0006_checkin_ratings_and_place_stats.sql`
 7. `supabase/migrations/0007_avatars_storage.sql`
+8. `supabase/migrations/0008_favorites.sql`
 
 Esto crea las tablas (`profiles`, `places`, `checkins`, `points_events`, `qr_codes`,
 `qr_redemptions`, `posts`, `post_likes`, `benefits`, `redemptions`), las políticas de
@@ -115,6 +117,12 @@ buena práctica.
   `Avatar` (`src/components/Avatar.tsx`) se usa en el header de Inicio, en
   Perfil y en el autor de cada post de Comunidad — imagen real si hay
   `avatar_url`, ícono de huella como fallback si no.
+- `app/perfil/puntos.tsx` y `app/perfil/canjes.tsx`: historial real de
+  `points_events` y `redemptions` — de dónde salió cada punto y en qué se
+  gastó, con pull-to-refresh.
+- Favoritos: el corazón en `app/lugar/[id].tsx` inserta/borra en la tabla
+  `favorites` (RLS: cada usuario solo ve/toca los suyos) y la pestaña
+  "Favoritos" de `app/(tabs)/perfil.tsx` lista los lugares marcados.
 
 Probado en este entorno con datos reales (incluyendo cámara con un dispositivo de
 video simulado, e interceptando las respuestas de Supabase con datos de prueba para

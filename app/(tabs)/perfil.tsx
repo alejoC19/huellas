@@ -14,7 +14,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { colors, fonts, fontSizes, radii, spacing } from '../../src/theme';
 import { getLevelInfo, LEVELS } from '../../src/utils/levels';
 
-type Tab = 'recorridos' | 'insignias' | 'agenda';
+type Tab = 'recorridos' | 'insignias' | 'favoritos' | 'agenda';
 
 type PlaceVisit = {
   placeId: string;
@@ -25,6 +25,16 @@ type PlaceVisit = {
 
 type CheckinRow = {
   id: string;
+  places: { id: string; name: string; neighborhood: string } | null;
+};
+
+type FavoritePlace = {
+  placeId: string;
+  placeName: string;
+  neighborhood: string;
+};
+
+type FavoriteRow = {
   places: { id: string; name: string; neighborhood: string } | null;
 };
 
@@ -39,6 +49,28 @@ export default function Perfil() {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({ huellas: 0, barrios: 0, lugares: 0 });
   const [visits, setVisits] = useState<PlaceVisit[]>([]);
+  const [favorites, setFavorites] = useState<FavoritePlace[]>([]);
+
+  const loadFavorites = useCallback(async () => {
+    if (!session) return;
+
+    const { data } = await supabase
+      .from('favorites')
+      .select('places(id, name, neighborhood)')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+
+    const rows = (data ?? []) as unknown as FavoriteRow[];
+    setFavorites(
+      rows
+        .filter((row) => row.places)
+        .map((row) => ({
+          placeId: row.places!.id,
+          placeName: row.places!.name,
+          neighborhood: row.places!.neighborhood,
+        }))
+    );
+  }, [session]);
 
   const loadVisits = useCallback(async () => {
     if (!session) return;
@@ -78,14 +110,14 @@ export default function Perfil() {
       return;
     }
     setLoading(true);
-    loadVisits().finally(() => setLoading(false));
-  }, [session, loadVisits]);
+    Promise.all([loadVisits(), loadFavorites()]).finally(() => setLoading(false));
+  }, [session, loadVisits, loadFavorites]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadVisits(), refreshProfile()]);
+    await Promise.all([loadVisits(), loadFavorites(), refreshProfile()]);
     setRefreshing(false);
-  }, [loadVisits, refreshProfile]);
+  }, [loadVisits, loadFavorites, refreshProfile]);
 
   const points = profile?.points ?? 0;
   const { level, nextLevel, pointsToNext } = getLevelInfo(points);
@@ -160,6 +192,11 @@ export default function Perfil() {
                 active={tab === 'insignias'}
                 onPress={() => setTab('insignias')}
               />
+              <TabButton
+                label="Favoritos"
+                active={tab === 'favoritos'}
+                onPress={() => setTab('favoritos')}
+              />
               <TabButton label="Agenda" active={tab === 'agenda'} onPress={() => setTab('agenda')} />
             </View>
 
@@ -201,6 +238,30 @@ export default function Perfil() {
                 })}
               </View>
             )}
+
+            {tab === 'favoritos' &&
+              (loading ? null : favorites.length === 0 ? (
+                <EmptyTab text="Todavía no marcaste lugares favoritos. ¡Tocá el corazón en un lugar!" />
+              ) : (
+                <View style={styles.list}>
+                  {favorites.map((favorite) => (
+                    <Pressable
+                      key={favorite.placeId}
+                      style={styles.visitRow}
+                      onPress={() => router.push(`/lugar/${favorite.placeId}`)}
+                    >
+                      <View style={styles.visitIcon}>
+                        <Ionicons name="heart" size={16} color="#E38585" />
+                      </View>
+                      <View style={styles.visitInfo}>
+                        <Text style={styles.visitName}>{favorite.placeName}</Text>
+                        <Text style={styles.visitMeta}>{favorite.neighborhood}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  ))}
+                </View>
+              ))}
 
             {tab === 'agenda' && <EmptyTab text="La agenda está en construcción." />}
 
