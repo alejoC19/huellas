@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>huellar — el mapa social de perros de Buenos Aires</title>
+<meta name="description" content="huellar es la app para dueños de perros en Buenos Aires: mapa de lugares pet friendly, check-ins con foto, comunidad y beneficios reales por participar." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cellipse cx='21' cy='38' rx='11' ry='15' fill='%23BFE180' transform='rotate(-25 21 38)'/%3E%3Cellipse cx='38' cy='21' rx='10' ry='16' fill='%23BFE180' transform='rotate(-8 38 21)'/%3E%3Cellipse cx='62' cy='21' rx='10' ry='16' fill='%23BFE180' transform='rotate(8 62 21)'/%3E%3Cellipse cx='79' cy='38' rx='11' ry='15' fill='%23BFE180' transform='rotate(25 79 38)'/%3E%3Cpath d='M50 90c-16 0-29-10-29-22 0-13 13-23 29-23s29 10 29 23c0 12-13 22-29 22Z' fill='%23BFE180'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --azul-vereda: #213346;
+    --verde-huella: #BFE180;
+    --verde-parque: #495B42;
+    --amarillo-solera: #FFF2B0;
+    --crema-base: #FFFDF6;
+    --white: #FFFFFF;
+    --text-on-dark-muted: rgba(255, 253, 246, 0.7);
+    --text-muted: rgba(33, 51, 70, 0.6);
+    --border: rgba(33, 51, 70, 0.08);
+    --display: 'Red Hat Display', sans-serif;
+    --text: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--crema-base);
+    color: var(--azul-vereda);
+    font-family: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  img, svg { display: block; max-width: 100%; }
+  a { text-decoration: none; color: inherit; }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Nav */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--azul-vereda);
+  }
+  .badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--verde-huella);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .badge svg { width: 60%; height: 60%; }
+
+  /* Hero */
+  .hero {
+    background: var(--azul-vereda);
+    color: var(--crema-base);
+    padding-bottom: 64px;
+  }
+  .hero .wrap { padding-top: 8px; }
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    padding: 40px 0 8px;
+  }
+  .hero-badge {
+    width: 88px;
+    height: 88px;
+    border-radius: 24px;
+    background: var(--verde-huella);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hero-badge svg { width: 56%; height: 56%; }
+  .hero h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(32px, 6vw, 52px);
+    line-height: 1.08;
+    margin: 0;
+    max-width: 640px;
+  }
+  .hero h1 .accent { color: var(--verde-huella); }
+  .hero p.sub {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--text-on-dark-muted);
+    max-width: 480px;
+    margin: 0;
+  }
+  .cta-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--verde-huella);
+    color: var(--azul-vereda);
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    padding: 16px 32px;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(191, 225, 128, 0.25);
+  }
+  .btn-download svg { width: 20px; height: 20px; }
+  .cta-note {
+    font-size: 13px;
+    color: var(--text-on-dark-muted);
+  }
+  .platform-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-on-dark-muted);
+    margin-top: 4px;
+  }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-on-dark-muted); }
+
+  /* Screens strip */
+  .screens {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 40px;
+    padding: 0 16px;
+  }
+  .screen-card {
+    flex: 1;
+    max-width: 200px;
+    background: rgba(255, 253, 246, 0.06);
+    border: 1px solid rgba(255, 253, 246, 0.12);
+    border-radius: 20px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+  .screen-card .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--verde-huella);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .screen-card .icon svg { width: 55%; height: 55%; }
+  .screen-card h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0 0 4px;
+  }
+  .screen-card p {
+    font-size: 12px;
+    color: var(--text-on-dark-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* Features */
+  .features { padding: 72px 0; }
+  .section-title {
+    text-align: center;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(24px, 4vw, 32px);
+    margin: 0 0 12px;
+  }
+  .section-sub {
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto 40px;
+  }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  @media (min-width: 720px) {
+    .feature-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .feature-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 24px 18px;
+    box-shadow: 0 8px 24px rgba(33, 51, 70, 0.06);
+  }
+  .feature-card .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--verde-huella);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .feature-card .icon svg { width: 55%; height: 55%; }
+  .feature-card h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0 0 6px;
+  }
+  .feature-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* Install steps */
+  .install {
+    background: var(--amarillo-solera);
+    padding: 56px 0;
+  }
+  .install-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+    text-align: center;
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-width: 560px;
+    text-align: left;
+    width: 100%;
+  }
+  @media (min-width: 640px) {
+    .steps { grid-template-columns: repeat(3, 1fr); text-align: center; }
+  }
+  .step {
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .step .num {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--verde-parque);
+    margin-bottom: 8px;
+  }
+  .step p {
+    font-size: 13px;
+    color: var(--azul-vereda);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* Footer */
+  footer {
+    padding: 40px 0;
+    text-align: center;
+  }
+  footer p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 4px 0;
+  }
+  footer .brand {
+    font-family: var(--display);
+    font-weight: 800;
+    color: var(--azul-vereda);
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <nav class="nav">
+      <div class="nav-brand">
+        <span class="badge">
+          <svg viewBox="0 0 100 100"><ellipse cx="21" cy="38" rx="11" ry="15" fill="#213346" transform="rotate(-25 21 38)"/><ellipse cx="38" cy="21" rx="10" ry="16" fill="#213346" transform="rotate(-8 38 21)"/><ellipse cx="62" cy="21" rx="10" ry="16" fill="#213346" transform="rotate(8 62 21)"/><ellipse cx="79" cy="38" rx="11" ry="15" fill="#213346" transform="rotate(25 79 38)"/><path d="M50 90c-16 0-29-10-29-22 0-13 13-23 29-23s29 10 29 23c0 12-13 22-29 22Z" fill="#213346"/></svg>
+        </span>
+        <span style="color: var(--crema-base)">huellar</span>
+      </div>
+    </nav>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <svg viewBox="0 0 100 100"><ellipse cx="21" cy="38" rx="11" ry="15" fill="#FFFDF6" transform="rotate(-25 21 38)"/><ellipse cx="38" cy="21" rx="10" ry="16" fill="#FFFDF6" transform="rotate(-8 38 21)"/><ellipse cx="62" cy="21" rx="10" ry="16" fill="#FFFDF6" transform="rotate(8 62 21)"/><ellipse cx="79" cy="38" rx="11" ry="15" fill="#FFFDF6" transform="rotate(25 79 38)"/><path d="M50 90c-16 0-29-10-29-22 0-13 13-23 29-23s29 10 29 23c0 12-13 22-29 22Z" fill="#FFFDF6"/></svg>
+      </div>
+
+      <h1>Cada perro deja <span class="accent">una huella</span>.</h1>
+      <p class="sub">
+        Juntas, arman el mapa de Buenos Aires que todavía no existe. Encontrá
+        plazas, cafés y veterinarias pet friendly en Colegiales, sumá puntos
+        por cada lugar que visitás, y conectá con otros dueños de tu barrio.
+      </p>
+
+      <div class="cta-row">
+        <a class="btn-download" href="DOWNLOAD_URL_PLACEHOLDER" download>
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v13m0 0-4-4m4 4 4-4M5 19h14"/></svg>
+          Descargar para Android
+        </a>
+        <span class="cta-note">.apk directo — no hace falta Google Play</span>
+      </div>
+
+      <div class="platform-note">
+        <span>Android disponible ahora</span>
+        <span class="dot"></span>
+        <span>iOS próximamente</span>
+      </div>
+    </div>
+
+    <div class="screens">
+      <div class="screen-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#213346" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+        </div>
+        <h3>Mapa real</h3>
+        <p>Lugares curados en Colegiales, con distancia y rating reales.</p>
+      </div>
+      <div class="screen-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#213346" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 17a4 4 0 100-8 4 4 0 000 8z"/></svg>
+        </div>
+        <h3>Check-ins</h3>
+        <p>Dejá tu huella con una foto y sumá puntos reales.</p>
+      </div>
+      <div class="screen-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#213346" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-3.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4"/></svg>
+        </div>
+        <h3>Comunidad</h3>
+        <p>Seguí a otros dueños y mirá qué anduvo cerca tuyo hoy.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="features">
+  <div class="wrap">
+    <h2 class="section-title">Todo lo que necesitás, en un lugar</h2>
+    <p class="section-sub">Sin datos inventados: cada estrella, cada punto y cada huella salen de gente real usando la app.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#213346" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.914c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.95-.69l1.519-4.674z"/></svg>
+        </div>
+        <h3>Gamificación real</h3>
+        <p>Puntos por check-in, reseñas y huellas QR escondidas. Todo calculado del lado del servidor.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#213346" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        </div>
+        <h3>Favoritos</h3>
+        <p>Guardá los lugares que más te gustan y volvé a encontrarlos fácil.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#213346" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h6M16 2h6v6M10 14L22 2"/></svg>
+        </div>
+        <h3>Beneficios</h3>
+        <p>Canjeá tus puntos por descuentos reales en comercios pet friendly del barrio.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#213346" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6 6m-11-4a7 7 0 100-14 7 7 0 000 14z"/></svg>
+        </div>
+        <h3>Búsqueda por barrio</h3>
+        <p>Filtrá por categoría o barrio y encontrá lo que necesitás al toque.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="install">
+  <div class="wrap">
+    <div class="install-inner">
+      <h2 class="section-title" style="margin:0">Instalarla en Android es simple</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <p>Tocá "Descargar para Android" desde tu celular y esperá que baje el archivo .apk.</p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <p>Abrí el archivo descargado. Android va a pedirte permitir instalar desde esta fuente — aceptalo.</p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <p>Confirmá la instalación. huellar va a aparecer en tu pantalla de inicio, lista para usar.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p class="brand">huellar</p>
+    <p>El mapa social de perros de Buenos Aires — Colegiales y alrededores.</p>
+  </div>
+</footer>
+
+</body>
+</html>
