@@ -159,3 +159,11 @@ export const PLACES: Place[] = [
 export function getPlaceById(id: string) {
   return PLACES.find((place) => place.id === id);
 }
+
+// Puente temporal: la tabla `places` de Supabase usa UUIDs, pero el mapa y el
+// detalle de lugar todavía navegan con los slugs mockeados de acá. Hasta que
+// Cerca se migre a datos reales, resolvemos por nombre (coinciden 1 a 1 con
+// el seed de supabase/migrations/0002_seed.sql).
+export function getMockPlaceIdByName(name: string) {
+  return PLACES.find((place) => place.name === name)?.id;
+}
