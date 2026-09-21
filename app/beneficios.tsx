@@ -1,7 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Benefit, BenefitCard } from '../src/components/BenefitCard';
@@ -26,6 +34,7 @@ export default function Beneficios() {
 
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>('todos');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
@@ -34,7 +43,6 @@ export default function Beneficios() {
   const points = profile?.points ?? 0;
 
   const loadBenefits = async () => {
-    setLoading(true);
     try {
       const { data } = await supabase
         .from('benefits')
@@ -52,12 +60,18 @@ export default function Beneficios() {
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     loadBenefits();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    Promise.all([loadBenefits(), refreshProfile()]);
+  };
 
   const visibleBenefits = useMemo(() => {
     if (filter === 'alcance') return benefits.filter((b) => b.pointsCost <= points);
@@ -123,6 +137,14 @@ export default function Beneficios() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.verdeParque}
+                colors={[colors.verdeParque]}
+              />
+            }
             ListEmptyComponent={
               <Card style={styles.emptyCard}>
                 <PawIcon size={24} color={colors.verdeParque} />

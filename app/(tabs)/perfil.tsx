@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '../../src/components/Avatar';
@@ -32,53 +32,60 @@ export default function Perfil() {
   const profile = useAuthStore((state) => state.profile);
   const session = useAuthStore((state) => state.session);
   const signOut = useAuthStore((state) => state.signOut);
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
 
   const [tab, setTab] = useState<Tab>('recorridos');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({ huellas: 0, barrios: 0, lugares: 0 });
   const [visits, setVisits] = useState<PlaceVisit[]>([]);
+
+  const loadVisits = useCallback(async () => {
+    if (!session) return;
+
+    const { data } = await supabase
+      .from('checkins')
+      .select('id, places(id, name, neighborhood)')
+      .eq('user_id', session.user.id);
+
+    const rows = (data ?? []) as unknown as CheckinRow[];
+    const neighborhoods = new Set<string>();
+    const placesById = new Map<string, PlaceVisit>();
+
+    rows.forEach((row) => {
+      if (!row.places) return;
+      neighborhoods.add(row.places.neighborhood);
+      const existing = placesById.get(row.places.id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        placesById.set(row.places.id, {
+          placeId: row.places.id,
+          placeName: row.places.name,
+          neighborhood: row.places.neighborhood,
+          count: 1,
+        });
+      }
+    });
+
+    setStats({ huellas: rows.length, barrios: neighborhoods.size, lugares: placesById.size });
+    setVisits(Array.from(placesById.values()).sort((a, b) => b.count - a.count));
+  }, [session]);
 
   useEffect(() => {
     if (!session) {
       setLoading(false);
       return;
     }
+    setLoading(true);
+    loadVisits().finally(() => setLoading(false));
+  }, [session, loadVisits]);
 
-    (async () => {
-      setLoading(true);
-      try {
-        const { data } = await supabase
-          .from('checkins')
-          .select('id, places(id, name, neighborhood)')
-          .eq('user_id', session.user.id);
-
-        const rows = (data ?? []) as unknown as CheckinRow[];
-        const neighborhoods = new Set<string>();
-        const placesById = new Map<string, PlaceVisit>();
-
-        rows.forEach((row) => {
-          if (!row.places) return;
-          neighborhoods.add(row.places.neighborhood);
-          const existing = placesById.get(row.places.id);
-          if (existing) {
-            existing.count += 1;
-          } else {
-            placesById.set(row.places.id, {
-              placeId: row.places.id,
-              placeName: row.places.name,
-              neighborhood: row.places.neighborhood,
-              count: 1,
-            });
-          }
-        });
-
-        setStats({ huellas: rows.length, barrios: neighborhoods.size, lugares: placesById.size });
-        setVisits(Array.from(placesById.values()).sort((a, b) => b.count - a.count));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [session]);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadVisits(), refreshProfile()]);
+    setRefreshing(false);
+  }, [loadVisits, refreshProfile]);
 
   const points = profile?.points ?? 0;
   const { level, nextLevel, pointsToNext } = getLevelInfo(points);
@@ -91,7 +98,18 @@ export default function Perfil() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.verdeParque}
+              colors={[colors.verdeParque]}
+            />
+          }
+        >
           <View style={styles.headerRow}>
             <View style={{ width: 22 }} />
             <Text style={styles.headerTitle}>Perfil</Text>

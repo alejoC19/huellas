@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '../../src/components/Avatar';
@@ -55,47 +55,43 @@ const CATEGORY_TILES = [
 
 export default function Home() {
   const profile = useAuthStore((state) => state.profile);
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadActivity = useCallback(async () => {
+    const { data } = await supabase
+      .from('checkins')
+      .select('id, created_at, profiles(pet_name), places(name)')
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    const rows = (data ?? []) as unknown as Array<{
+      id: string;
+      created_at: string;
+      profiles: { pet_name: string } | null;
+      places: { name: string } | null;
+    }>;
+    setActivity(
+      rows.map((row) => ({
+        id: row.id,
+        created_at: row.created_at,
+        pet_name: row.profiles?.pet_name || 'Alguien',
+        place_name: row.places?.name || 'un lugar cerca tuyo',
+      }))
+    );
+  }, []);
 
   useEffect(() => {
-    let mounted = true;
+    loadActivity().finally(() => setLoadingActivity(false));
+  }, [loadActivity]);
 
-    const loadActivity = async () => {
-      try {
-        const { data } = await supabase
-          .from('checkins')
-          .select('id, created_at, profiles(pet_name), places(name)')
-          .order('created_at', { ascending: false })
-          .limit(3);
-
-        if (!mounted) return;
-
-        const rows = (data ?? []) as unknown as Array<{
-          id: string;
-          created_at: string;
-          profiles: { pet_name: string } | null;
-          places: { name: string } | null;
-        }>;
-        setActivity(
-          rows.map((row) => ({
-            id: row.id,
-            created_at: row.created_at,
-            pet_name: row.profiles?.pet_name || 'Alguien',
-            place_name: row.places?.name || 'un lugar cerca tuyo',
-          }))
-        );
-      } finally {
-        if (mounted) setLoadingActivity(false);
-      }
-    };
-
-    loadActivity();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadActivity(), refreshProfile()]);
+    setRefreshing(false);
+  }, [loadActivity, refreshProfile]);
 
   const points = profile?.points ?? 0;
   const { level, levelIndex, nextLevel } = getLevelInfo(points);
@@ -106,7 +102,18 @@ export default function Home() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.verdeParque}
+              colors={[colors.verdeParque]}
+            />
+          }
+        >
           <View style={styles.header}>
             <Pressable style={styles.headerLeft} onPress={() => router.push('/perfil/editar')}>
               <Avatar uri={profile?.avatar_url} size={44} />

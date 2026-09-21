@@ -2,7 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '../../src/components/Card';
@@ -41,11 +49,11 @@ export default function Comunidad() {
   const [posts, setPosts] = useState<FeedPostWithGeo[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FeedFilter>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const loadFeed = async () => {
-    setLoading(true);
     try {
       const { data } = await supabase
         .from('posts')
@@ -84,12 +92,18 @@ export default function Comunidad() {
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     loadFeed();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadFeed();
+  };
 
   useEffect(() => {
     (async () => {
@@ -196,6 +210,14 @@ export default function Comunidad() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.feedContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.verdeParque}
+                colors={[colors.verdeParque]}
+              />
+            }
             renderItem={({ item }) => (
               <PostCard
                 post={item}
