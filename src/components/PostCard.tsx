@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts, fontSizes, radii, spacing } from '../theme';
-import { PawIcon } from './PawIcon';
+import { Avatar } from './Avatar';
 
 export type FeedPost = {
   id: string;
@@ -13,6 +13,7 @@ export type FeedPost = {
   commentsCount: number;
   earnedCheckinPoints: boolean;
   petName: string;
+  petAvatarUrl: string | null;
   placeName: string;
   placeNeighborhood: string;
 };
@@ -29,9 +30,7 @@ export function PostCard({ post, liked, timeLabel, onToggleLike, onViewPlace }: 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <PawIcon size={18} color={colors.azulVereda} />
-        </View>
+        <Avatar uri={post.petAvatarUrl} size={36} background={colors.cremaBase} pawColor={colors.azulVereda} />
         <View style={styles.headerInfo}>
           <Text style={styles.petName}>{post.petName}</Text>
           <Text style={styles.meta}>
@@ -85,16 +84,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.cremaBase,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerInfo: {
     flex: 1,

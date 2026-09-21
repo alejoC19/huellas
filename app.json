@@ -47,6 +47,12 @@
         {
           "locationWhenInUsePermission": "huellar usa tu ubicación para mostrarte lugares cerca tuyo y confirmar que estás en el lugar al dejar una huella."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "huellar usa tus fotos para que elijas una imagen de perfil."
+        }
       ]
     ],
     "experiments": {

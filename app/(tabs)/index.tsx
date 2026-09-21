@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '../../src/components/Avatar';
 import { Card } from '../../src/components/Card';
 import { CategoryTile } from '../../src/components/CategoryTile';
 import { LevelBar } from '../../src/components/LevelBar';
@@ -107,17 +108,15 @@ export default function Home() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.avatar}>
-                <PawIcon size={22} color={colors.verdeParque} />
-              </View>
+            <Pressable style={styles.headerLeft} onPress={() => router.push('/perfil/editar')}>
+              <Avatar uri={profile?.avatar_url} size={44} />
               <View>
                 <Text style={styles.greeting}>Hola{ownerName ? `, ${ownerName}` : ''}</Text>
                 <Text style={styles.greetingSub}>
                   {petName} · {neighborhood}
                 </Text>
               </View>
-            </View>
+            </Pressable>
             <Pressable style={styles.bellButton}>
               <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
             </Pressable>
@@ -210,14 +209,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.verdeHuella,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   greeting: {
     fontFamily: fonts.displayBold,

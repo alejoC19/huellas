@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '../../src/components/Avatar';
 import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
 import { LevelSteps } from '../../src/components/LevelBar';
-import { PawBadge } from '../../src/components/PawBadge';
 import { PawIcon } from '../../src/components/PawIcon';
 import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -101,7 +101,12 @@ export default function Perfil() {
           </View>
 
           <View style={styles.avatarBlock}>
-            <PawBadge size={80} />
+            <Pressable style={styles.avatarWrap} onPress={() => router.push('/perfil/editar')}>
+              <Avatar uri={profile?.avatar_url} size={80} pawColor={colors.cremaBase} />
+              <View style={styles.avatarEditBadge}>
+                <Ionicons name="pencil" size={12} color={colors.azulVereda} />
+              </View>
+            </Pressable>
             <Text style={styles.petName}>{petName}</Text>
             <Text style={styles.petMeta}>
               {breedAge ? `${breedAge} · ` : ''}
@@ -264,6 +269,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     marginTop: spacing.md,
+  },
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.verdeHuella,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.azulVereda,
   },
   petName: {
     fontFamily: fonts.displayExtraBold,

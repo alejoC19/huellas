@@ -31,7 +31,7 @@ type PostRow = {
   likes_count: number;
   comments_count: number;
   checkin_id: string | null;
-  profiles: { pet_name: string } | null;
+  profiles: { pet_name: string; avatar_url: string | null } | null;
   places: { id: string; name: string; neighborhood: string; latitude: number; longitude: number } | null;
 };
 
@@ -50,7 +50,7 @@ export default function Comunidad() {
       const { data } = await supabase
         .from('posts')
         .select(
-          'id, created_at, text, image_url, likes_count, comments_count, checkin_id, profiles(pet_name), places(id, name, neighborhood, latitude, longitude)'
+          'id, created_at, text, image_url, likes_count, comments_count, checkin_id, profiles(pet_name, avatar_url), places(id, name, neighborhood, latitude, longitude)'
         )
         .order('created_at', { ascending: false })
         .limit(30);
@@ -66,6 +66,7 @@ export default function Comunidad() {
           commentsCount: row.comments_count,
           earnedCheckinPoints: Boolean(row.checkin_id),
           petName: row.profiles?.pet_name || 'Alguien',
+          petAvatarUrl: row.profiles?.avatar_url ?? null,
           placeName: row.places?.name || 'un lugar',
           placeNeighborhood: row.places?.neighborhood || '',
           placeId: row.places?.id ?? null,

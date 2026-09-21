@@ -18,6 +18,10 @@ type SignInInput = {
   password: string;
 };
 
+type ProfileUpdateInput = Partial<
+  Pick<Profile, 'owner_name' | 'pet_name' | 'pet_breed' | 'pet_age' | 'neighborhood' | 'avatar_url'>
+>;
+
 type AuthState = {
   initialized: boolean;
   session: Session | null;
@@ -29,6 +33,7 @@ type AuthState = {
   signIn: (input: SignInInput) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfile: (patch: ProfileUpdateInput) => Promise<{ error: string | null }>;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -94,5 +99,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ session: null, profile: null });
+  },
+
+  updateProfile: async (patch) => {
+    const userId = get().session?.user.id;
+    if (!userId) return { error: 'No hay sesión activa.' };
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(patch)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) return { error: error.message };
+    if (data) set({ profile: data });
+    return { error: null };
   },
 }));
