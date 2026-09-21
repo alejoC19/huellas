@@ -91,6 +91,7 @@ export default function SignUp() {
               variant="secondary"
               onPress={() => router.replace('/auth/login')}
             />
+            <Text style={styles.termsText}>Al continuar aceptás nuestros términos.</Text>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -139,5 +140,12 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.md,
+  },
+  termsText: {
+    fontFamily: fonts.textRegular,
+    fontSize: fontSizes.xs,
+    color: colors.textOnDarkMuted,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
 });

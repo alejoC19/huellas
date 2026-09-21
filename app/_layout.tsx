@@ -11,6 +11,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
@@ -36,14 +38,16 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="auth/signup" />
-          <Stack.Screen name="auth/login" />
-          <Stack.Screen name="loading" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="beneficios" />
-        </Stack>
+        <ErrorBoundary>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="onboarding" />
+            <Stack.Screen name="auth/signup" />
+            <Stack.Screen name="auth/login" />
+            <Stack.Screen name="loading" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="beneficios" />
+          </Stack>
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
