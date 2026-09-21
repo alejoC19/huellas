@@ -4,14 +4,14 @@
 
 El proyecto `huellas` (`qhdvewichgadzcujhnhq`, región `ca-central-1`) ya tiene:
 
-- Las 6 migraciones corridas (`0001_init` a `0006_checkin_ratings_and_place_stats`):
+- Las 7 migraciones corridas (`0001_init` a `0007_avatars_storage`):
   10 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
-  optimizadas, el bucket de Storage `checkins` (público para lectura, cada
-  usuario sube solo a su propia carpeta), un campo `rating` opcional (1-5) en
-  `checkins` y la vista `place_stats` (huellas + promedio de estrellas reales
-  por lugar) — revisado con el Security y Performance Advisor de Supabase. Sin
-  warnings pendientes salvo dos que son config manual del dashboard, no de
-  esquema (ver abajo).
+  optimizadas, los buckets de Storage `checkins` y `avatars` (públicos para
+  lectura, cada usuario sube solo a su propia carpeta), un campo `rating`
+  opcional (1-5) en `checkins` y la vista `place_stats` (huellas + promedio de
+  estrellas reales por lugar) — revisado con el Security y Performance Advisor
+  de Supabase. Sin warnings pendientes salvo dos que son config manual del
+  dashboard, no de esquema (ver abajo).
 - 9 lugares, 4 beneficios y 1 huella QR de ejemplo cargados.
 - `.env` local con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY`
   del proyecto (no está en git — armalo vos en tu compu, ver abajo).
@@ -35,6 +35,7 @@ En el dashboard de tu proyecto, andá a **SQL Editor → New query** y corré, e
 4. `supabase/migrations/0004_performance.sql`
 5. `supabase/migrations/0005_checkins_storage.sql`
 6. `supabase/migrations/0006_checkin_ratings_and_place_stats.sql`
+7. `supabase/migrations/0007_avatars_storage.sql`
 
 Esto crea las tablas (`profiles`, `places`, `checkins`, `points_events`, `qr_codes`,
 `qr_redemptions`, `posts`, `post_likes`, `benefits`, `redemptions`), las políticas de
@@ -109,6 +110,11 @@ buena práctica.
   de check-ins por lugar, no un número inventado.
 - `app/(tabs)/perfil.tsx`, `app/beneficios.tsx`: stats, recorridos, insignias y
   canje de beneficios, todo contra datos reales (ver commits anteriores).
+- `app/perfil/editar.tsx`: edición real de perfil (nombre, mascota, raza, edad,
+  barrio) y foto de perfil, que se sube al bucket `avatars` de Storage. El
+  `Avatar` (`src/components/Avatar.tsx`) se usa en el header de Inicio, en
+  Perfil y en el autor de cada post de Comunidad — imagen real si hay
+  `avatar_url`, ícono de huella como fallback si no.
 
 Probado en este entorno con datos reales (incluyendo cámara con un dispositivo de
 video simulado, e interceptando las respuestas de Supabase con datos de prueba para
