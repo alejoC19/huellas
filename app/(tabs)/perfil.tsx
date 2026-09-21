@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
 import { LevelSteps } from '../../src/components/LevelBar';
 import { PawBadge } from '../../src/components/PawBadge';
@@ -187,6 +189,13 @@ export default function Perfil() {
                 </Text>
               </View>
             )}
+
+            <Button
+              label="Ver beneficios"
+              variant="ghost"
+              onPress={() => router.push('/beneficios')}
+              style={styles.benefitsButton}
+            />
           </Card>
         </ScrollView>
       </SafeAreaView>
@@ -428,5 +437,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.textSemiBold,
     fontSize: fontSizes.sm,
     color: colors.textPrimary,
+  },
+  benefitsButton: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
   },
 });
