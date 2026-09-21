@@ -36,9 +36,12 @@ Con la key en mano, agregala a `app.json` dentro de `expo.android`:
 
 ## 2. Generar el build
 
+El proyecto ya está vinculado a un proyecto de EAS
+(`c1867e53-b97d-403e-8c25-e4bc11eff044`, en `app.json` → `expo.extra.eas.projectId`),
+así que no hace falta correr `eas init`. Solo:
+
 ```bash
-npx eas login          # cuenta gratuita de Expo (creála en expo.dev si no tenés)
-npx eas build:configure # solo la primera vez, vincula el proyecto a tu cuenta
+npx eas login          # cuenta gratuita de Expo (la misma con la que viste ese ID)
 
 # Cargar las variables de Supabase como Environment Variables de EAS
 # (el build corre en la nube y no tiene acceso a tu .env local)
