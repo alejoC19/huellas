@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 import type { Database } from './database.types';
@@ -30,3 +31,15 @@ export const supabase = createClient<Database>(
     },
   }
 );
+
+// Requerido por Supabase para React Native: sin esto, el refresh
+// automático del token de sesión no corre de forma confiable cuando la
+// app pasa a segundo plano, y al volver la sesión puede aparecer vencida
+// (obligando a loguearse de nuevo aunque el dispositivo la tenía guardada).
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
+});

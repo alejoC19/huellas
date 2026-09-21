@@ -40,7 +40,6 @@ export const MapSection = forwardRef<MapSectionHandle, MapSectionProps>(
               key={place.id}
               coordinate={{ latitude: place.latitude, longitude: place.longitude }}
               onPress={() => onSelectPlace(place)}
-              tracksViewChanges={false}
             >
               <PlacePin
                 category={place.category}

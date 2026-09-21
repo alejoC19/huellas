@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { File } from 'expo-file-system';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -122,13 +123,15 @@ export default function CheckIn() {
     setError(null);
 
     try {
-      const response = await fetch(photoUri);
-      const blob = await response.blob();
+      // fetch(uri).blob() no es confiable para leer archivos locales en
+      // dispositivo (produce blobs vacíos/corruptos en Android/iOS aunque
+      // funcione bien en web). Leemos el archivo directo con expo-file-system.
+      const fileBytes = await new File(photoUri).arrayBuffer();
       const path = `${session.user.id}/${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from('checkins')
-        .upload(path, blob, { contentType: 'image/jpeg' });
+        .upload(path, fileBytes, { contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
