@@ -3,13 +3,13 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../../src/components/Button';
 import { PawBadge } from '../../src/components/PawBadge';
 import { PawIcon } from '../../src/components/PawIcon';
-import { getPlaceById } from '../../src/data/places';
+import { StarPicker } from '../../src/components/StarPicker';
 import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { colors, fonts, fontSizes, radii, spacing } from '../../src/theme';
@@ -19,9 +19,16 @@ type Step = 'camera' | 'preview' | 'done';
 
 const STEP_NUMBER: Record<Step, number> = { camera: 1, preview: 2, done: 3 };
 
+type CheckinPlace = {
+  id: string;
+  name: string;
+  neighborhood: string;
+  latitude: number;
+  longitude: number;
+};
+
 export default function CheckIn() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const place = getPlaceById(id ?? '');
 
   const session = useAuthStore((state) => state.session);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
@@ -29,10 +36,13 @@ export default function CheckIn() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
+  const [place, setPlace] = useState<CheckinPlace | null>(null);
+  const [loadingPlace, setLoadingPlace] = useState(true);
   const [step, setStep] = useState<Step>('camera');
   const [distanceLabel, setDistanceLabel] = useState<string | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
+  const [rating, setRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +51,28 @@ export default function CheckIn() {
       requestPermission();
     }
   }, [permission]);
+
+  useEffect(() => {
+    if (!id) return;
+    let mounted = true;
+
+    (async () => {
+      setLoadingPlace(true);
+      const { data } = await supabase
+        .from('places')
+        .select('id, name, neighborhood, latitude, longitude')
+        .eq('id', id)
+        .single();
+      if (mounted) {
+        setPlace(data);
+        setLoadingPlace(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (!place) return;
@@ -58,6 +90,14 @@ export default function CheckIn() {
       setDistanceLabel(formatDistance(meters));
     })();
   }, [place]);
+
+  if (loadingPlace) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.verdeHuella} />
+      </View>
+    );
+  }
 
   if (!place) {
     return (
@@ -82,18 +122,6 @@ export default function CheckIn() {
     setError(null);
 
     try {
-      // El mapa todavía usa datos mockeados (src/data/places.ts); resolvemos
-      // el lugar real en Supabase por nombre hasta migrar Cerca a la base.
-      const { data: dbPlace, error: placeError } = await supabase
-        .from('places')
-        .select('id')
-        .eq('name', place.name)
-        .single();
-
-      if (placeError || !dbPlace) {
-        throw new Error('No encontramos este lugar en la base de datos.');
-      }
-
       const response = await fetch(photoUri);
       const blob = await response.blob();
       const path = `${session.user.id}/${Date.now()}.jpg`;
@@ -109,7 +137,7 @@ export default function CheckIn() {
 
       const { data: checkinRow, error: checkinError } = await supabase
         .from('checkins')
-        .insert({ user_id: session.user.id, place_id: dbPlace.id, photo_url: photoUrl })
+        .insert({ user_id: session.user.id, place_id: place.id, photo_url: photoUrl, rating })
         .select()
         .single();
 
@@ -119,7 +147,7 @@ export default function CheckIn() {
 
       await supabase.from('posts').insert({
         user_id: session.user.id,
-        place_id: dbPlace.id,
+        place_id: place.id,
         checkin_id: checkinRow.id,
         image_url: photoUrl,
         text: caption,
@@ -195,8 +223,13 @@ export default function CheckIn() {
 
         {step === 'preview' && photoUri && (
           <View style={styles.stepBody}>
-            <View style={styles.cameraFrame}>
+            <View style={[styles.cameraFrame, styles.previewFrame]}>
               <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            </View>
+
+            <View style={styles.ratingBlock}>
+              <Text style={styles.ratingLabel}>¿Cómo estuvo?</Text>
+              <StarPicker value={rating} onChange={setRating} />
             </View>
 
             <TextInput
@@ -327,6 +360,20 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.borderOnDark,
     borderStyle: 'dashed',
+  },
+  previewFrame: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 240,
+  },
+  ratingBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  ratingLabel: {
+    fontFamily: fonts.textMedium,
+    fontSize: fontSizes.sm,
+    color: colors.textOnDarkMuted,
   },
   cameraPlaceholder: {
     flex: 1,

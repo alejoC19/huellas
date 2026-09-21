@@ -1,16 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Chip } from '../../src/components/Chip';
 import { MapSection } from '../../src/components/MapSection';
 import { MapSectionHandle, MapRegion } from '../../src/components/MapSection.types';
 import { PlaceCard } from '../../src/components/PlaceCard';
-import { CATEGORY_LABELS, PLACES, Place, PlaceCategory } from '../../src/data/places';
+import { CATEGORY_LABELS, PlaceCategory } from '../../src/data/places';
+import { useRemotePlaces } from '../../src/hooks/useRemotePlaces';
 import { colors, fonts, fontSizes, radii, spacing } from '../../src/theme';
+import { formatDistance, haversineDistanceMeters } from '../../src/utils/geo';
 
 const COLEGIALES_REGION: MapRegion = {
   latitude: -34.5755,
@@ -27,13 +38,40 @@ export default function Cerca() {
     ? (params.category as PlaceCategory)
     : null;
 
+  const { places, loading } = useRemotePlaces();
   const mapRef = useRef<MapSectionHandle>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<PlaceCategory | null>(initialCategory);
-  const [selectedId, setSelectedId] = useState<string>(PLACES[0].id);
+  const [selectedId, setSelectedId] = useState<string>('');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!selectedId && places.length > 0) {
+      setSelectedId(places[0].id);
+    }
+  }, [places, selectedId]);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const position = await Location.getCurrentPositionAsync({});
+      setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+    })();
+  }, []);
+
+  const placesWithDistance = useMemo(() => {
+    if (!userLocation) return places;
+    return places.map((place) => ({
+      ...place,
+      distanceLabel: formatDistance(
+        haversineDistanceMeters(userLocation.lat, userLocation.lng, place.latitude, place.longitude)
+      ),
+    }));
+  }, [places, userLocation]);
 
   const filteredPlaces = useMemo(() => {
-    return PLACES.filter((place) => {
+    return placesWithDistance.filter((place) => {
       const matchesCategory = !category || place.category === category;
       const matchesQuery =
         !query.trim() ||
@@ -41,9 +79,9 @@ export default function Cerca() {
         place.neighborhood.toLowerCase().includes(query.trim().toLowerCase());
       return matchesCategory && matchesQuery;
     });
-  }, [category, query]);
+  }, [placesWithDistance, category, query]);
 
-  const focusPlace = (place: Place) => {
+  const focusPlace = (place: { id: string; latitude: number; longitude: number }) => {
     setSelectedId(place.id);
     mapRef.current?.animateToRegion(
       {
@@ -60,6 +98,7 @@ export default function Cerca() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') return;
     const position = await Location.getCurrentPositionAsync({});
+    setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
     mapRef.current?.animateToRegion(
       {
         latitude: position.coords.latitude,
@@ -75,7 +114,7 @@ export default function Cerca() {
     <View style={styles.container}>
       <MapSection
         ref={mapRef}
-        places={PLACES}
+        places={placesWithDistance}
         category={category}
         selectedId={selectedId}
         initialRegion={COLEGIALES_REGION}
@@ -121,21 +160,29 @@ export default function Cerca() {
       </SafeAreaView>
 
       <View style={styles.bottomCarousel}>
-        <FlatList
-          horizontal
-          data={filteredPlaces}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.carouselContent}
-          renderItem={({ item }) => (
-            <PlaceCard
-              place={item}
-              selected={item.id === selectedId}
-              onPress={() => focusPlace(item)}
-              onGo={() => router.push(`/lugar/${item.id}`)}
-            />
-          )}
-        />
+        {loading ? (
+          <ActivityIndicator color={colors.verdeParque} />
+        ) : filteredPlaces.length === 0 ? (
+          <View style={styles.emptyCarousel}>
+            <Text style={styles.emptyCarouselText}>No encontramos lugares para este filtro.</Text>
+          </View>
+        ) : (
+          <FlatList
+            horizontal
+            data={filteredPlaces}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carouselContent}
+            renderItem={({ item }) => (
+              <PlaceCard
+                place={item}
+                selected={item.id === selectedId}
+                onPress={() => focusPlace(item)}
+                onGo={() => router.push(`/lugar/${item.id}`)}
+              />
+            )}
+          />
+        )}
       </View>
     </View>
   );
@@ -212,9 +259,22 @@ const styles = StyleSheet.create({
     right: 0,
     paddingBottom: spacing.xxl,
     paddingTop: spacing.md,
+    minHeight: 60,
   },
   carouselContent: {
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
+  },
+  emptyCarousel: {
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  emptyCarouselText: {
+    fontFamily: fonts.textMedium,
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
   },
 });

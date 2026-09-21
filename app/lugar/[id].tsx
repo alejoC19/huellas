@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
 import { PawIcon } from '../../src/components/PawIcon';
 import { StarRating } from '../../src/components/StarRating';
-import { getPlaceById } from '../../src/data/places';
+import { Place } from '../../src/data/places';
+import { supabase } from '../../src/lib/supabase';
 import { colors, fonts, fontSizes, radii, spacing } from '../../src/theme';
+import { timeAgo } from '../../src/utils/time';
 
 const FEATURE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   'Sin correa': 'paw',
@@ -22,9 +25,87 @@ const FEATURE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Peluquería: 'cut',
 };
 
+type RecentCheckin = {
+  id: string;
+  createdAt: string;
+  petName: string;
+};
+
 export default function LugarDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const place = getPlaceById(id ?? '');
+  const [place, setPlace] = useState<Place | null>(null);
+  const [recent, setRecent] = useState<RecentCheckin[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    let mounted = true;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const [{ data: placeRow }, { data: statsRow }, { data: checkinRows }] = await Promise.all([
+          supabase
+            .from('places')
+            .select('id, name, category, neighborhood, address, latitude, longitude, tags')
+            .eq('id', id)
+            .single(),
+          supabase.from('place_stats').select('checkin_count, avg_rating').eq('place_id', id).single(),
+          supabase
+            .from('checkins')
+            .select('id, created_at, profiles(pet_name)')
+            .eq('place_id', id)
+            .order('created_at', { ascending: false })
+            .limit(4),
+        ]);
+
+        if (!mounted) return;
+
+        if (placeRow) {
+          setPlace({
+            id: placeRow.id,
+            name: placeRow.name,
+            category: placeRow.category as Place['category'],
+            neighborhood: placeRow.neighborhood,
+            address: placeRow.address,
+            latitude: placeRow.latitude,
+            longitude: placeRow.longitude,
+            tags: placeRow.tags,
+            rating: statsRow?.avg_rating ? Number(statsRow.avg_rating) : 0,
+            reviewCount: statsRow?.checkin_count ?? 0,
+            distanceLabel: '',
+          });
+        }
+
+        const rows = (checkinRows ?? []) as unknown as Array<{
+          id: string;
+          created_at: string;
+          profiles: { pet_name: string } | null;
+        }>;
+        setRecent(
+          rows.map((row) => ({
+            id: row.id,
+            createdAt: row.created_at,
+            petName: row.profiles?.pet_name || 'Alguien',
+          }))
+        );
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={styles.notFound}>
+        <ActivityIndicator color={colors.verdeParque} />
+      </View>
+    );
+  }
 
   if (!place) {
     return (
@@ -68,7 +149,8 @@ export default function LugarDetalle() {
         <View style={styles.ratingRow}>
           <StarRating rating={place.rating} size={16} />
           <Text style={styles.ratingText}>
-            {place.rating.toFixed(1)} · {place.reviewCount} huellas
+            {place.rating > 0 ? `${place.rating.toFixed(1)} · ` : ''}
+            {place.reviewCount} huellas
           </Text>
         </View>
 
@@ -81,7 +163,7 @@ export default function LugarDetalle() {
           ))}
           <View style={styles.featureRow}>
             <Ionicons name="shield-checkmark" size={18} color={colors.verdeParque} />
-            <Text style={styles.featureText}>Verificado por {place.verifiedBy} vecinos</Text>
+            <Text style={styles.featureText}>Verificado por {place.reviewCount} vecinos</Text>
           </View>
         </View>
       </Card>
@@ -90,25 +172,21 @@ export default function LugarDetalle() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Últimas huellas</Text>
 
-          <View style={styles.activityRow}>
-            <View style={styles.activityAvatar}>
-              <PawIcon size={18} color={colors.azulVereda} />
-            </View>
-            <Text style={styles.activityText}>
-              <Text style={styles.activityName}>Tita </Text>
-              dejó una huella hace 2h
-            </Text>
-          </View>
-
-          <View style={styles.activityRow}>
-            <View style={styles.activityAvatar}>
-              <PawIcon size={18} color={colors.azulVereda} />
-            </View>
-            <Text style={styles.activityText}>
-              <Text style={styles.activityName}>Ramón </Text>
-              recomendó este lugar
-            </Text>
-          </View>
+          {recent.length === 0 ? (
+            <Text style={styles.emptyText}>Todavía nadie dejó una huella acá. ¡Sé el primero!</Text>
+          ) : (
+            recent.map((item) => (
+              <View key={item.id} style={styles.activityRow}>
+                <View style={styles.activityAvatar}>
+                  <PawIcon size={18} color={colors.azulVereda} />
+                </View>
+                <Text style={styles.activityText}>
+                  <Text style={styles.activityName}>{item.petName} </Text>
+                  dejó una huella {timeAgo(item.createdAt)}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -226,6 +304,11 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.lg,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
+  },
+  emptyText: {
+    fontFamily: fonts.textRegular,
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
   },
   activityRow: {
     flexDirection: 'row',

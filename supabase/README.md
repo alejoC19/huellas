@@ -4,13 +4,14 @@
 
 El proyecto `huellas` (`qhdvewichgadzcujhnhq`, región `ca-central-1`) ya tiene:
 
-- Las 5 migraciones corridas (`0001_init`, `0002_seed`, `0003_harden_security`,
-  `0004_performance`, `0005_checkins_storage`): 10 tablas, RLS en todas,
-  triggers de puntos, índices en foreign keys, policies optimizadas y el
-  bucket de Storage `checkins` (público para lectura, cada usuario sube solo
-  a su propia carpeta) — revisado con el Security y Performance Advisor de
-  Supabase. Sin warnings pendientes salvo dos que son config manual del
-  dashboard, no de esquema (ver abajo).
+- Las 6 migraciones corridas (`0001_init` a `0006_checkin_ratings_and_place_stats`):
+  10 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
+  optimizadas, el bucket de Storage `checkins` (público para lectura, cada
+  usuario sube solo a su propia carpeta), un campo `rating` opcional (1-5) en
+  `checkins` y la vista `place_stats` (huellas + promedio de estrellas reales
+  por lugar) — revisado con el Security y Performance Advisor de Supabase. Sin
+  warnings pendientes salvo dos que son config manual del dashboard, no de
+  esquema (ver abajo).
 - 9 lugares, 4 beneficios y 1 huella QR de ejemplo cargados.
 - `.env` local con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY`
   del proyecto (no está en git — armalo vos en tu compu, ver abajo).
@@ -33,11 +34,12 @@ En el dashboard de tu proyecto, andá a **SQL Editor → New query** y corré, e
 3. `supabase/migrations/0003_harden_security.sql`
 4. `supabase/migrations/0004_performance.sql`
 5. `supabase/migrations/0005_checkins_storage.sql`
+6. `supabase/migrations/0006_checkin_ratings_and_place_stats.sql`
 
 Esto crea las tablas (`profiles`, `places`, `checkins`, `points_events`, `qr_codes`,
 `qr_redemptions`, `posts`, `post_likes`, `benefits`, `redemptions`), las políticas de
-Row Level Security, los triggers que calculan los puntos en el servidor, los índices
-y carga los 9 lugares + 4 beneficios + 1 huella QR de ejemplo.
+Row Level Security, los triggers que calculan los puntos en el servidor, los índices,
+la vista `place_stats` y carga los 9 lugares + 4 beneficios + 1 huella QR de ejemplo.
 
 ## 3. Conectar la app en tu compu
 
@@ -95,23 +97,32 @@ buena práctica.
   reciente real desde `checkins` (si no hay ninguno, muestra un estado vacío en vez
   de datos inventados).
 - `app/checkin/[id].tsx`: check-in real en 3 pasos — cámara (`expo-camera`),
-  distancia real por GPS al lugar (`expo-location`), sube la foto al bucket
-  `checkins` de Storage, inserta en `checkins` (el trigger de la base suma +50 pts
-  solo) y publica un post en `posts` para el feed de Comunidad.
+  distancia real por GPS al lugar (`expo-location`), un selector de estrellas
+  (`StarPicker`) opcional, sube la foto al bucket `checkins` de Storage, inserta
+  en `checkins` (el trigger de la base suma +50 pts solo) y publica un post en
+  `posts` para el feed de Comunidad.
+- `app/(tabs)/cerca.tsx` (Mapa), `app/lugar/[id].tsx` (Detalle) y
+  `app/(tabs)/comunidad.tsx`: leen los lugares reales de Supabase
+  (`useRemotePlaces`, tabla `places` + vista `place_stats`) — ya no hay ningún
+  dato de lugares mockeado en el cliente. Las estrellas y "N huellas" que se ven
+  en el mapa y el detalle son reales: promedio de `checkins.rating` y cantidad
+  de check-ins por lugar, no un número inventado.
+- `app/(tabs)/perfil.tsx`, `app/beneficios.tsx`: stats, recorridos, insignias y
+  canje de beneficios, todo contra datos reales (ver commits anteriores).
 
 Probado en este entorno con datos reales (incluyendo cámara con un dispositivo de
-video simulado): el signup y el check-in arman las llamadas correctas a
-`https://qhdvewichgadzcujhnhq.supabase.co/...` con el payload esperado. Esta sandbox
-de desarrollo tiene bloqueada la salida de red hacia Supabase (por política del
-entorno en la nube), así que la confirmación end-to-end de que los puntos suman de
-verdad hay que hacerla desde tu celu/compu, que sí tienen internet normal.
+video simulado, e interceptando las respuestas de Supabase con datos de prueba para
+verificar el layout sin depender de la red bloqueada del sandbox): el signup y el
+check-in arman las llamadas correctas a `https://qhdvewichgadzcujhnhq.supabase.co/...`
+con el payload esperado. Esta sandbox de desarrollo tiene bloqueada la salida de red
+hacia Supabase (por política del entorno en la nube), así que la confirmación
+end-to-end de que los puntos suman de verdad hay que hacerla desde tu celu/compu, que
+sí tienen internet normal.
 
-## Qué falta conectar (próximos bloques)
+## Qué falta (opcional, no bloquea la tesis)
 
-- El mapa (`src/data/places.ts`) todavía usa datos mockeados en el cliente en vez de
-  leer la tabla `places` de Supabase (el check-in ya "puentea" esto buscando el lugar
-  real por nombre, pero es temporal). Migrar Cerca a Supabase es el paso lógico
-  siguiente.
-- Comunidad, Perfil y Beneficios todavía muestran placeholders — sus tablas
-  (`posts`/`post_likes`, `redemptions`, etc.) ya existen y, gracias al check-in, ya
-  hay datos reales para mostrar en cuanto se conecten esas pantallas.
+- "Siguiendo" en Comunidad y "Agenda" en Perfil muestran un estado "en
+  construcción" honesto — no hay sistema de seguidores ni de agenda todavía.
+- Las reseñas verificadas (+30 pts) y la huella QR escondida (+75 pts) están
+  con su lógica de puntos lista en la base (`points_events`, `qr_codes`,
+  `qr_redemptions`), pero todavía no tienen pantalla propia en la app.

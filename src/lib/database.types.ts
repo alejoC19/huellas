@@ -51,6 +51,7 @@ export type Database = {
           id: string
           photo_url: string
           place_id: string
+          rating: number | null
           user_id: string
         }
         Insert: {
@@ -58,6 +59,7 @@ export type Database = {
           id?: string
           photo_url: string
           place_id: string
+          rating?: number | null
           user_id: string
         }
         Update: {
@@ -65,9 +67,17 @@ export type Database = {
           id?: string
           photo_url?: string
           place_id?: string
+          rating?: number | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "checkins_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "place_stats"
+            referencedColumns: ["place_id"]
+          },
           {
             foreignKeyName: "checkins_place_id_fkey"
             columns: ["place_id"]
@@ -146,6 +156,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "points_events_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "place_stats"
+            referencedColumns: ["place_id"]
+          },
           {
             foreignKeyName: "points_events_place_id_fkey"
             columns: ["place_id"]
@@ -241,6 +258,13 @@ export type Database = {
             foreignKeyName: "posts_place_id_fkey"
             columns: ["place_id"]
             isOneToOne: false
+            referencedRelation: "place_stats"
+            referencedColumns: ["place_id"]
+          },
+          {
+            foreignKeyName: "posts_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
             referencedRelation: "places"
             referencedColumns: ["id"]
           },
@@ -309,6 +333,13 @@ export type Database = {
           place_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "qr_codes_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "place_stats"
+            referencedColumns: ["place_id"]
+          },
           {
             foreignKeyName: "qr_codes_place_id_fkey"
             columns: ["place_id"]
@@ -395,7 +426,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      place_stats: {
+        Row: {
+          avg_rating: number | null
+          checkin_count: number | null
+          place_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       redeem_benefit: {

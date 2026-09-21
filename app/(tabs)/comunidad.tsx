@@ -9,7 +9,6 @@ import { Card } from '../../src/components/Card';
 import { Chip } from '../../src/components/Chip';
 import { PawIcon } from '../../src/components/PawIcon';
 import { FeedPost, PostCard } from '../../src/components/PostCard';
-import { getMockPlaceIdByName } from '../../src/data/places';
 import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { colors, fonts, fontSizes, radii, spacing } from '../../src/theme';
@@ -18,7 +17,11 @@ import { timeAgo } from '../../src/utils/time';
 
 type FeedFilter = 'cerca' | 'siguiendo' | 'colegiales' | null;
 
-type FeedPostWithGeo = FeedPost & { placeLat: number | null; placeLng: number | null };
+type FeedPostWithGeo = FeedPost & {
+  placeId: string | null;
+  placeLat: number | null;
+  placeLng: number | null;
+};
 
 type PostRow = {
   id: string;
@@ -29,7 +32,7 @@ type PostRow = {
   comments_count: number;
   checkin_id: string | null;
   profiles: { pet_name: string } | null;
-  places: { name: string; neighborhood: string; latitude: number; longitude: number } | null;
+  places: { id: string; name: string; neighborhood: string; latitude: number; longitude: number } | null;
 };
 
 export default function Comunidad() {
@@ -47,7 +50,7 @@ export default function Comunidad() {
       const { data } = await supabase
         .from('posts')
         .select(
-          'id, created_at, text, image_url, likes_count, comments_count, checkin_id, profiles(pet_name), places(name, neighborhood, latitude, longitude)'
+          'id, created_at, text, image_url, likes_count, comments_count, checkin_id, profiles(pet_name), places(id, name, neighborhood, latitude, longitude)'
         )
         .order('created_at', { ascending: false })
         .limit(30);
@@ -65,6 +68,7 @@ export default function Comunidad() {
           petName: row.profiles?.pet_name || 'Alguien',
           placeName: row.places?.name || 'un lugar',
           placeNeighborhood: row.places?.neighborhood || '',
+          placeId: row.places?.id ?? null,
           placeLat: row.places?.latitude ?? null,
           placeLng: row.places?.longitude ?? null,
         }))
@@ -198,8 +202,7 @@ export default function Comunidad() {
                 timeLabel={timeAgo(item.createdAt)}
                 onToggleLike={() => toggleLike(item.id)}
                 onViewPlace={() => {
-                  const mockId = getMockPlaceIdByName(item.placeName);
-                  if (mockId) router.push(`/lugar/${mockId}`);
+                  if (item.placeId) router.push(`/lugar/${item.placeId}`);
                 }}
               />
             )}
