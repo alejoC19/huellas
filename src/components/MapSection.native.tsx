@@ -1,39 +1,133 @@
-import { Ionicons } from '@expo/vector-icons';
-import { forwardRef, useImperativeHandle, useRef } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT, UrlTile } from 'react-native-maps';
+import WebView, { type WebViewMessageEvent } from 'react-native-webview';
 
-import { colors, fonts, fontSizes, spacing } from '../theme';
 import { PlacePin } from './PlacePin';
-import { MapSectionHandle, MapSectionProps } from './MapSection.types';
+import { MapRegion, MapSectionHandle, MapSectionProps } from './MapSection.types';
 
-// En Android, react-native-maps siempre inicializa el SDK nativo de Google Maps
-// (aunque se usen tiles de OSM/Carto vía UrlTile), y sin una API key configurada
-// en app.json (android.config.googleMaps.apiKey) esa inicialización crashea la
-// app. Hasta que se configure esa key, mostramos un estado vacío honesto en
-// Android en vez de dejar que crashee. iOS usa Apple Maps por defecto y no
-// necesita la key, así que ahí el mapa nativo funciona normalmente.
-const GOOGLE_MAPS_KEY_CONFIGURED = false;
+// react-native-maps siempre inicializa el SDK nativo de Google Maps en Android
+// (aunque se usen tiles de OSM/Carto vía UrlTile), lo que requiere una API key
+// de Google configurada con una cuenta de facturación — algo que este proyecto
+// no tiene por ahora. En vez de eso, Android usa un mapa Leaflet dentro de un
+// WebView con esos mismos tiles gratuitos: cero costo, sin cuenta de Google,
+// y funciona igual en Expo Go. iOS usa Apple Maps por defecto (PROVIDER_DEFAULT),
+// que no necesita ninguna key, así que ahí se mantiene el mapa nativo.
+function regionToZoom(region: MapRegion) {
+  const delta = region.longitudeDelta || 0.01;
+  return Math.max(3, Math.min(19, Math.round(Math.log2(360 / delta))));
+}
+
+function buildLeafletHtml(region: MapRegion) {
+  const zoom = regionToZoom(region);
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  html, body, #map { height: 100%; margin: 0; padding: 0; background: #FFFDF6; }
+  .huellar-pin { display: flex; align-items: center; justify-content: center; border-radius: 999px; box-shadow: 0 2px 4px rgba(33,51,70,0.25); border-style: solid; border-color: #BFE180; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${region.latitude}, ${region.longitude}], ${zoom});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+  var markers = {};
+  var COLORS = { plaza: '#495B42', cafe: '#FFF2B0', veterinaria: '#213346' };
+  var EMOJI = { plaza: '\\uD83C\\uDF3F', cafe: '\\u2615', veterinaria: '\\u2695\\uFE0F' };
+
+  function makeIcon(category, selected, dimmed) {
+    var size = selected ? 44 : 34;
+    var bg = COLORS[category] || '#495B42';
+    var html = '<div class="huellar-pin" style="width:' + size + 'px;height:' + size + 'px;background:' + bg + ';opacity:' + (dimmed ? 0.35 : 1) + ';border-width:' + (selected ? 3 : 0) + 'px;font-size:' + (selected ? 18 : 14) + 'px;">' + (EMOJI[category] || '') + '</div>';
+    return L.divIcon({ html: html, className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+  }
+
+  function update(data) {
+    var places = data.places || [];
+    var ids = {};
+    places.forEach(function (place) {
+      ids[place.id] = true;
+      var dimmed = data.category ? place.category !== data.category : false;
+      var selected = place.id === data.selectedId;
+      var icon = makeIcon(place.category, selected, dimmed);
+      if (markers[place.id]) {
+        markers[place.id].setLatLng([place.latitude, place.longitude]);
+        markers[place.id].setIcon(icon);
+      } else {
+        var m = L.marker([place.latitude, place.longitude], { icon: icon }).addTo(map);
+        m.on('click', function () {
+          if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(place.id);
+        });
+        markers[place.id] = m;
+      }
+    });
+    Object.keys(markers).forEach(function (id) {
+      if (!ids[id]) {
+        map.removeLayer(markers[id]);
+        delete markers[id];
+      }
+    });
+  }
+
+  function animateToRegion(region, duration) {
+    var z = Math.max(3, Math.min(19, Math.round(Math.log2(360 / (region.longitudeDelta || 0.01)))));
+    map.flyTo([region.latitude, region.longitude], z, { duration: (duration || 350) / 1000 });
+  }
+
+  window.huellarUpdate = update;
+  window.huellarAnimateToRegion = animateToRegion;
+</script>
+</body>
+</html>`;
+}
 
 export const MapSection = forwardRef<MapSectionHandle, MapSectionProps>(
   ({ places, category, selectedId, initialRegion, onSelectPlace }, ref) => {
     const mapRef = useRef<MapView>(null);
+    const webviewRef = useRef<WebView>(null);
+    const [webReady, setWebReady] = useState(false);
+    const html = useMemo(() => buildLeafletHtml(initialRegion), [initialRegion]);
 
     useImperativeHandle(ref, () => ({
       animateToRegion: (region, duration = 350) => {
-        mapRef.current?.animateToRegion(region, duration);
+        if (Platform.OS === 'android') {
+          webviewRef.current?.injectJavaScript(
+            `window.huellarAnimateToRegion(${JSON.stringify(region)}, ${duration}); true;`
+          );
+        } else {
+          mapRef.current?.animateToRegion(region, duration);
+        }
       },
     }));
 
-    if (Platform.OS === 'android' && !GOOGLE_MAPS_KEY_CONFIGURED) {
+    useEffect(() => {
+      if (Platform.OS !== 'android' || !webReady) return;
+      webviewRef.current?.injectJavaScript(
+        `window.huellarUpdate(${JSON.stringify({ places, category, selectedId })}); true;`
+      );
+    }, [places, category, selectedId, webReady]);
+
+    if (Platform.OS === 'android') {
+      const handleMessage = (event: WebViewMessageEvent) => {
+        const place = places.find((p) => p.id === event.nativeEvent.data);
+        if (place) onSelectPlace(place);
+      };
+
       return (
-        <View style={[StyleSheet.absoluteFill, styles.fallback]}>
-          <Ionicons name="map" size={40} color={colors.verdeParque} />
-          <Text style={styles.text}>
-            El mapa todavía no está disponible en Android.{'\n'}Podés ver los lugares en la lista
-            de abajo mientras tanto.
-          </Text>
-        </View>
+        <WebView
+          ref={webviewRef}
+          originWhitelist={['*']}
+          source={{ html }}
+          style={StyleSheet.absoluteFill}
+          onLoadEnd={() => setWebReady(true)}
+          onMessage={handleMessage}
+        />
       );
     }
 
@@ -43,7 +137,7 @@ export const MapSection = forwardRef<MapSectionHandle, MapSectionProps>(
         style={StyleSheet.absoluteFill}
         provider={PROVIDER_DEFAULT}
         initialRegion={initialRegion}
-        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+        mapType="standard"
         showsUserLocation
         showsMyLocationButton={false}
         showsCompass={false}
@@ -52,7 +146,6 @@ export const MapSection = forwardRef<MapSectionHandle, MapSectionProps>(
           urlTemplate="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           maximumZ={19}
           flipY={false}
-          shouldReplaceMapContent={Platform.OS === 'android'}
         />
 
         {places.map((place) => {
@@ -75,19 +168,3 @@ export const MapSection = forwardRef<MapSectionHandle, MapSectionProps>(
     );
   }
 );
-
-const styles = StyleSheet.create({
-  fallback: {
-    backgroundColor: colors.cremaBase,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.xxxl,
-  },
-  text: {
-    fontFamily: fonts.textRegular,
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-});
