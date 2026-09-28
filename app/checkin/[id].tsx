@@ -45,6 +45,7 @@ export default function CheckIn() {
   const [caption, setCaption] = useState('');
   const [rating, setRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
+  const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,10 +111,19 @@ export default function CheckIn() {
   }
 
   const takePhoto = async () => {
-    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
-    if (photo) {
-      setPhotoUri(photo.uri);
-      setStep('preview');
+    if (capturing) return;
+    setCapturing(true);
+    setError(null);
+    try {
+      const photo = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
+      if (photo) {
+        setPhotoUri(photo.uri);
+        setStep('preview');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No pudimos sacar la foto. Probá de nuevo.');
+    } finally {
+      setCapturing(false);
     }
   };
 
@@ -216,10 +226,13 @@ export default function CheckIn() {
               La foto confirma que estuviste ahí y suma tus puntos.
             </Text>
 
+            {error ? <Text style={styles.errorInline}>{error}</Text> : null}
+
             <Button
-              label="Sacar la foto"
+              label={capturing ? 'Sacando foto…' : 'Sacar la foto'}
               onPress={takePhoto}
-              disabled={!permission?.granted}
+              loading={capturing}
+              disabled={!permission?.granted || capturing}
             />
           </View>
         )}
