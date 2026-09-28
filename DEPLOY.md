@@ -4,63 +4,36 @@ Este proyecto se distribuye para Android como un `.apk` descargable directo
 desde la landing (`/landing`), sin pasar por Google Play. No hace falta
 ninguna cuenta paga para esto — solo una cuenta gratuita de Expo.
 
-## Estado actual ✅ (con un pendiente conocido)
+## Estado actual ✅
 
 - Ya hay un build de producción funcionando: **huellar-alejoc19.vercel.app**
-  tiene el botón "Descargar para Android" conectado a un `.apk` real (build
-  `f862ecfe`, 21/09/2026). Login, check-ins, comunidad, beneficios y QR
-  funcionan de punta a punta.
-- **El mapa queda en blanco en esa build** — ver el punto 1 de abajo.
-  No es un bug de código: es que todavía no tiene la API key de Google Maps.
-- El link del `.apk` expira el **21/10/2026** (retención gratuita de EAS,
-  30 días). Antes de esa fecha hay que generar un build nuevo — avisen y
-  lo lanzo yo mismo con las herramientas de Expo conectadas.
+  tiene el botón "Descargar para Android" conectado a un `.apk` real. Login,
+  check-ins, comunidad, beneficios y QR funcionan de punta a punta.
+- **El mapa funciona en Android sin ninguna cuenta de Google** — ver el
+  punto 1 de abajo. Ya no queda pendiente.
+- El link del `.apk` expira 30 días después de generado (retención gratuita
+  de EAS). Antes de esa fecha hay que generar un build nuevo — avisen y lo
+  lanzo yo mismo con las herramientas de Expo conectadas.
 
-## 1. Conseguir una API key de Google Maps (gratis, pero pide tarjeta) — PENDIENTE
+## 1. El mapa en Android (resuelto, sin costo)
 
 `react-native-maps` en Android siempre corre sobre el SDK de Google Maps
-por debajo, aunque el mapa use los tiles de OpenStreetMap/Carto (eso sigue
-siendo gratis). Sin esta key, el mapa queda en blanco en una build real
-(en Expo Go funciona igual porque Expo usa una key compartida solo para
-desarrollo).
+por debajo, aunque el mapa use los tiles de OpenStreetMap/Carto — y ese SDK
+necesita una API key ligada a una cuenta de facturación de Google Cloud
+(con tarjeta, aunque el uso en sí sea gratis). Se evaluó pagar el prepago
+de esa cuenta y también MapLibre (gratis, pero rompe el flujo de probar con
+Expo Go), y se descartaron ambos.
 
-**Intentado el 21/09/2026**: Google empujó el flujo de "prueba gratis" de
-Cloud, que pide un prepago único de USD 30 (reembolsable, viene con $300 de
-crédito) para vincular una cuenta de facturación. Se decidió posponerlo por
-falta de presupuesto en ese momento — la app sigue 100% funcional sin esto,
-solo sin mapa visible en Android.
+**Solución actual**: en Android, el mapa se renderiza con **Leaflet dentro
+de un WebView** (`react-native-webview`), usando los mismos tiles gratuitos
+de OpenStreetMap/Carto. Cero costo, cero cuenta de Google, y sigue
+funcionando con `npx expo start` + Expo Go como siempre. iOS sigue usando
+el mapa nativo (Apple Maps vía `PROVIDER_DEFAULT`), que nunca necesitó key.
 
-Cuando se retome, dos caminos:
-
-**A) Pagar el prepago y usar la key de Google** (rápido, ~10 min):
-1. Andá a [console.cloud.google.com](https://console.cloud.google.com/) y
-   creá un proyecto (o usá uno existente).
-2. Habilitá **"Maps SDK for Android"** en la biblioteca de APIs. Si te pide
-   vincular facturación, es el paso del prepago de $30 mencionado arriba.
-3. Creá una credencial de tipo **API key** en "Credenciales" → restringila
-   ahí mismo a solo **"Maps SDK for Android"** (sección "Restricciones de
-   API", buscala con el filtro de texto si la lista no la muestra de
-   entrada).
-4. (Recomendado) En "Restricciones de aplicaciones" elegí "Apps para
-   Android" y agregá el `package name` `com.huellar.app` con el SHA-1 de
-   la key de firma (`npx eas-cli@latest credentials` → Android → ver
-   credenciales).
-
-Con la key en mano, agregala a `app.json` dentro de `expo.android`:
-
-```json
-"config": {
-  "googleMaps": {
-    "apiKey": "TU_API_KEY_ACA"
-  }
-}
-```
-
-**B) Cambiar a una librería de mapas gratuita para siempre (MapLibre)**:
-cero costo, pero MapLibre no viene incluida en Expo Go — se pierde la
-comodidad de probar con `npx expo start` + escanear QR, hay que compilar
-una build de desarrollo para probar en el celu de ahí en más. Evaluar si
-vale la pena ese cambio de flujo antes de encararlo.
+Si en algún futuro se quiere el mapa 100% nativo en Android también
+(mejor rendimiento con muchísimos markers, gestos más fluidos), ahí sí
+haría falta la key de Google Maps o migrar a MapLibre — pero para el uso
+actual de la app (unos pocos lugares en Colegiales) el WebView anda bien.
 
 ## 2. Generar un build nuevo
 
