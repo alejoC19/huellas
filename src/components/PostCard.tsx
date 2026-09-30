@@ -25,6 +25,7 @@ type Props = {
   timeLabel: string;
   onToggleLike: () => void;
   onViewPlace?: () => void;
+  onViewProfile?: () => void;
   isOwnPost?: boolean;
   following?: boolean;
   onToggleFollow?: () => void;
@@ -36,6 +37,7 @@ export function PostCard({
   timeLabel,
   onToggleLike,
   onViewPlace,
+  onViewProfile,
   isOwnPost,
   following,
   onToggleFollow,
@@ -43,13 +45,15 @@ export function PostCard({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Avatar uri={post.petAvatarUrl} size={36} background={colors.cremaBase} pawColor={colors.azulVereda} />
-        <View style={styles.headerInfo}>
-          <Text style={styles.petName}>{post.petName}</Text>
-          <Text style={styles.meta}>
-            {post.placeName} · {post.placeNeighborhood} · {timeLabel}
-          </Text>
-        </View>
+        <Pressable style={styles.headerPressable} onPress={onViewProfile} disabled={!onViewProfile}>
+          <Avatar uri={post.petAvatarUrl} size={36} background={colors.cremaBase} pawColor={colors.azulVereda} />
+          <View style={styles.headerInfo}>
+            <Text style={styles.petName}>{post.petName}</Text>
+            <Text style={styles.meta}>
+              {post.placeName} · {post.placeNeighborhood} · {timeLabel}
+            </Text>
+          </View>
+        </Pressable>
         {!isOwnPost && onToggleFollow && (
           <Pressable
             style={[styles.followPill, following && styles.followPillActive]}
@@ -104,6 +108,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  headerPressable: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,

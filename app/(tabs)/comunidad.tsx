@@ -249,6 +249,7 @@ export default function Comunidad() {
                 onViewPlace={() => {
                   if (item.placeId) router.push(`/lugar/${item.placeId}`);
                 }}
+                onViewProfile={() => router.push(`/usuario/${item.userId}`)}
                 isOwnPost={item.userId === session?.user.id}
                 following={followingIds.has(item.userId)}
                 onToggleFollow={() => toggleFollow(item.userId)}
