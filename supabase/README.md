@@ -4,17 +4,18 @@
 
 El proyecto `huellas` (`qhdvewichgadzcujhnhq`, región `ca-central-1`) ya tiene:
 
-- Las 9 migraciones corridas (`0001_init` a `0009_follows`):
-  12 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
+- Las 11 migraciones corridas (`0001_init` a `0011_reviews`):
+  13 tablas, RLS en todas, triggers de puntos, índices en foreign keys, policies
   optimizadas, los buckets de Storage `checkins` y `avatars` (públicos para
   lectura, cada usuario sube solo a su propia carpeta), un campo `rating`
   opcional (1-5) en `checkins`, la vista `place_stats` (huellas + promedio de
   estrellas reales por lugar), la tabla `favorites` (lugares favoritos,
-  privada por usuario) y la tabla `follows` (seguir usuarios, pública para
-  lectura) — revisado con el Security y Performance Advisor
-  de Supabase. Sin warnings pendientes salvo dos que son config manual del
-  dashboard, no de esquema (ver abajo).
-- 9 lugares, 4 beneficios y 1 huella QR de ejemplo cargados.
+  privada por usuario), la tabla `follows` (seguir usuarios, pública para
+  lectura) y la tabla `reviews` (reseñas verificadas, +30 pts — solo se puede
+  reseñar un lugar donde ya hiciste check-in) — revisado con el Security y
+  Performance Advisor de Supabase. Sin warnings pendientes salvo dos que son
+  config manual del dashboard, no de esquema (ver abajo).
+- 21 lugares, 8 beneficios y 1 huella QR de ejemplo cargados.
 - `.env` local con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY`
   del proyecto (no está en git — armalo vos en tu compu, ver abajo).
 
@@ -40,6 +41,8 @@ En el dashboard de tu proyecto, andá a **SQL Editor → New query** y corré, e
 7. `supabase/migrations/0007_avatars_storage.sql`
 8. `supabase/migrations/0008_favorites.sql`
 9. `supabase/migrations/0009_follows.sql`
+10. `supabase/migrations/0010_more_places.sql`
+11. `supabase/migrations/0011_reviews.sql`
 
 Esto crea las tablas (`profiles`, `places`, `checkins`, `points_events`, `qr_codes`,
 `qr_redemptions`, `posts`, `post_likes`, `benefits`, `redemptions`), las políticas de
@@ -148,12 +151,14 @@ hacia Supabase (por política del entorno en la nube), así que la confirmación
 end-to-end de que los puntos suman de verdad hay que hacerla desde tu celu/compu, que
 sí tienen internet normal.
 
+- Reseñas verificadas: `app/resena/[id].tsx` — solo se puede reseñar un
+  lugar donde el usuario ya tiene un check-in (gate por RLS, no solo en el
+  cliente); `app/lugar/[id].tsx` lista las reseñas reales de cada lugar.
+
 ## Qué falta (opcional, no bloquea la tesis)
 
 - "Agenda" en Perfil muestra un estado "en construcción" honesto — no hay
   feature de agenda todavía ("Siguiendo" en Comunidad ya es real, ver arriba).
-- Las reseñas verificadas (+30 pts) todavía no tienen pantalla propia (la
-  huella QR escondida ya sí, ver arriba).
 - No hay notificaciones (la campanita de Inicio es decorativa) ni pantalla de
   perfil público de otro usuario — seguir a alguien se hace desde el pill del
   post, no hay una vista "perfil de fulano" para explorar antes de seguir.
