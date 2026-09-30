@@ -143,15 +143,14 @@ export default function PerfilPublico() {
     const next = !following;
     setFollowing(next);
     try {
-      if (next) {
-        await supabase.from('follows').insert({ follower_id: session.user.id, following_id: id });
-      } else {
-        await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', session.user.id)
-          .eq('following_id', id);
-      }
+      const { error } = next
+        ? await supabase.from('follows').insert({ follower_id: session.user.id, following_id: id })
+        : await supabase
+            .from('follows')
+            .delete()
+            .eq('follower_id', session.user.id)
+            .eq('following_id', id);
+      if (error) setFollowing(!next);
     } finally {
       setTogglingFollow(false);
     }
@@ -173,10 +172,24 @@ export default function PerfilPublico() {
           : post
       )
     );
-    if (isLiked) {
-      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', session.user.id);
-    } else {
-      await supabase.from('post_likes').insert({ post_id: postId, user_id: session.user.id });
+    const { error } = isLiked
+      ? await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', session.user.id)
+      : await supabase.from('post_likes').insert({ post_id: postId, user_id: session.user.id });
+
+    if (error) {
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (isLiked) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? { ...post, likesCount: Math.max(0, post.likesCount + (isLiked ? 1 : -1)) }
+            : post
+        )
+      );
     }
   };
 

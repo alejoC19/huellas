@@ -136,10 +136,24 @@ export default function Comunidad() {
       )
     );
 
-    if (isLiked) {
-      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', session.user.id);
-    } else {
-      await supabase.from('post_likes').insert({ post_id: postId, user_id: session.user.id });
+    const { error } = isLiked
+      ? await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', session.user.id)
+      : await supabase.from('post_likes').insert({ post_id: postId, user_id: session.user.id });
+
+    if (error) {
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (isLiked) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? { ...post, likesCount: Math.max(0, post.likesCount + (isLiked ? 1 : -1)) }
+            : post
+        )
+      );
     }
   };
 
@@ -154,14 +168,21 @@ export default function Comunidad() {
       return next;
     });
 
-    if (isFollowing) {
-      await supabase
-        .from('follows')
-        .delete()
-        .eq('follower_id', session.user.id)
-        .eq('following_id', authorId);
-    } else {
-      await supabase.from('follows').insert({ follower_id: session.user.id, following_id: authorId });
+    const { error } = isFollowing
+      ? await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', session.user.id)
+          .eq('following_id', authorId)
+      : await supabase.from('follows').insert({ follower_id: session.user.id, following_id: authorId });
+
+    if (error) {
+      setFollowingIds((prev) => {
+        const next = new Set(prev);
+        if (isFollowing) next.add(authorId);
+        else next.delete(authorId);
+        return next;
+      });
     }
   };
 

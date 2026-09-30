@@ -149,15 +149,14 @@ export default function LugarDetalle() {
     const next = !favorite;
     setFavorite(next);
     try {
-      if (next) {
-        await supabase.from('favorites').insert({ place_id: place.id, user_id: session.user.id });
-      } else {
-        await supabase
-          .from('favorites')
-          .delete()
-          .eq('place_id', place.id)
-          .eq('user_id', session.user.id);
-      }
+      const { error } = next
+        ? await supabase.from('favorites').insert({ place_id: place.id, user_id: session.user.id })
+        : await supabase
+            .from('favorites')
+            .delete()
+            .eq('place_id', place.id)
+            .eq('user_id', session.user.id);
+      if (error) setFavorite(!next);
     } finally {
       setTogglingFavorite(false);
     }

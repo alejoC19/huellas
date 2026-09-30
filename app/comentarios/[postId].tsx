@@ -45,6 +45,7 @@ export default function Comentarios() {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!postId) return;
@@ -75,11 +76,18 @@ export default function Comentarios() {
   const sendComment = async () => {
     if (!session || !postId || !text.trim() || sending) return;
     setSending(true);
+    setError(null);
     const body = text.trim();
     setText('');
     try {
-      await supabase.from('comments').insert({ post_id: postId, user_id: session.user.id, text: body });
+      const { error: insertError } = await supabase
+        .from('comments')
+        .insert({ post_id: postId, user_id: session.user.id, text: body });
+      if (insertError) throw insertError;
       await load();
+    } catch (err) {
+      setText(body);
+      setError(err instanceof Error ? err.message : 'No pudimos publicar el comentario. Probá de nuevo.');
     } finally {
       setSending(false);
     }
@@ -130,7 +138,9 @@ export default function Comentarios() {
         )}
 
         {session ? (
-          <View style={styles.inputRow}>
+          <>
+            {error ? <Text style={styles.errorInline}>{error}</Text> : null}
+            <View style={styles.inputRow}>
             <TextInput
               value={text}
               onChangeText={setText}
@@ -147,7 +157,8 @@ export default function Comentarios() {
             >
               <Ionicons name="send" size={18} color={colors.azulVereda} />
             </Pressable>
-          </View>
+            </View>
+          </>
         ) : null}
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -221,6 +232,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.textRegular,
     fontSize: fontSizes.xs,
     color: colors.textMuted,
+  },
+  errorInline: {
+    fontFamily: fonts.textMedium,
+    fontSize: fontSizes.sm,
+    color: '#E38585',
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   inputRow: {
     flexDirection: 'row',
