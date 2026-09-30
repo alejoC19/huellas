@@ -154,11 +154,14 @@ sí tienen internet normal.
 - Reseñas verificadas: `app/resena/[id].tsx` — solo se puede reseñar un
   lugar donde el usuario ya tiene un check-in (gate por RLS, no solo en el
   cliente); `app/lugar/[id].tsx` lista las reseñas reales de cada lugar.
+- Perfil público de otro usuario: `app/usuario/[id].tsx` — se abre tocando
+  el avatar/nombre de cualquier post en Comunidad; muestra mascota, nivel,
+  stats reales (huellas, lugares distintos, reseñas) y sus posts, con botón
+  de seguir/dejar de seguir.
 
 ## Qué falta (opcional, no bloquea la tesis)
 
 - "Agenda" en Perfil muestra un estado "en construcción" honesto — no hay
   feature de agenda todavía ("Siguiendo" en Comunidad ya es real, ver arriba).
-- No hay notificaciones (la campanita de Inicio es decorativa) ni pantalla de
-  perfil público de otro usuario — seguir a alguien se hace desde el pill del
-  post, no hay una vista "perfil de fulano" para explorar antes de seguir.
+- No hay notificaciones (la campanita de Inicio es decorativa) — nadie se
+  entera si lo siguen, le dan like o comentan.
