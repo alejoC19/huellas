@@ -32,11 +32,19 @@ type RecentCheckin = {
   petName: string;
 };
 
+type Review = {
+  id: string;
+  text: string;
+  createdAt: string;
+  petName: string;
+};
+
 export default function LugarDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const session = useAuthStore((state) => state.session);
   const [place, setPlace] = useState<Place | null>(null);
   const [recent, setRecent] = useState<RecentCheckin[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [favorite, setFavorite] = useState(false);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
@@ -48,20 +56,27 @@ export default function LugarDetalle() {
     (async () => {
       setLoading(true);
       try {
-        const [{ data: placeRow }, { data: statsRow }, { data: checkinRows }] = await Promise.all([
-          supabase
-            .from('places')
-            .select('id, name, category, neighborhood, address, latitude, longitude, tags')
-            .eq('id', id)
-            .single(),
-          supabase.from('place_stats').select('checkin_count, avg_rating').eq('place_id', id).single(),
-          supabase
-            .from('checkins')
-            .select('id, created_at, profiles(pet_name)')
-            .eq('place_id', id)
-            .order('created_at', { ascending: false })
-            .limit(4),
-        ]);
+        const [{ data: placeRow }, { data: statsRow }, { data: checkinRows }, { data: reviewRows }] =
+          await Promise.all([
+            supabase
+              .from('places')
+              .select('id, name, category, neighborhood, address, latitude, longitude, tags')
+              .eq('id', id)
+              .single(),
+            supabase.from('place_stats').select('checkin_count, avg_rating').eq('place_id', id).single(),
+            supabase
+              .from('checkins')
+              .select('id, created_at, profiles(pet_name)')
+              .eq('place_id', id)
+              .order('created_at', { ascending: false })
+              .limit(4),
+            supabase
+              .from('reviews')
+              .select('id, text, created_at, profiles(pet_name)')
+              .eq('place_id', id)
+              .order('created_at', { ascending: false })
+              .limit(10),
+          ]);
 
         if (session) {
           const { data: favoriteRow } = await supabase
@@ -99,6 +114,21 @@ export default function LugarDetalle() {
         setRecent(
           rows.map((row) => ({
             id: row.id,
+            createdAt: row.created_at,
+            petName: row.profiles?.pet_name || 'Alguien',
+          }))
+        );
+
+        const reviewRowsTyped = (reviewRows ?? []) as unknown as Array<{
+          id: string;
+          text: string;
+          created_at: string;
+          profiles: { pet_name: string } | null;
+        }>;
+        setReviews(
+          reviewRowsTyped.map((row) => ({
+            id: row.id,
+            text: row.text,
             createdAt: row.created_at,
             petName: row.profiles?.pet_name || 'Alguien',
           }))
@@ -222,6 +252,30 @@ export default function LugarDetalle() {
                   <Text style={styles.activityName}>{item.petName} </Text>
                   dejó una huella {timeAgo(item.createdAt)}
                 </Text>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.reviewsHeader}>
+            <Text style={styles.sectionTitle}>Reseñas</Text>
+            {session ? (
+              <Pressable onPress={() => router.push(`/resena/${place.id}`)}>
+                <Text style={styles.reviewsCta}>Dejar reseña</Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          {reviews.length === 0 ? (
+            <Text style={styles.emptyText}>Todavía no hay reseñas verificadas de este lugar.</Text>
+          ) : (
+            reviews.map((review) => (
+              <View key={review.id} style={styles.reviewRow}>
+                <Text style={styles.reviewMeta}>
+                  <Text style={styles.activityName}>{review.petName}</Text> · {timeAgo(review.createdAt)}
+                </Text>
+                <Text style={styles.reviewText}>{review.text}</Text>
               </View>
             ))
           )}
@@ -370,6 +424,30 @@ const styles = StyleSheet.create({
   },
   activityName: {
     fontFamily: fonts.textSemiBold,
+  },
+  reviewsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reviewsCta: {
+    fontFamily: fonts.textSemiBold,
+    fontSize: fontSizes.sm,
+    color: colors.verdeParque,
+  },
+  reviewRow: {
+    gap: 4,
+  },
+  reviewMeta: {
+    fontFamily: fonts.textRegular,
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+  },
+  reviewText: {
+    fontFamily: fonts.textRegular,
+    fontSize: fontSizes.sm,
+    color: colors.textPrimary,
+    lineHeight: 20,
   },
   footer: {
     paddingHorizontal: spacing.lg,

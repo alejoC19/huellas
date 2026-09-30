@@ -26,10 +26,15 @@ const WAYS_TO_EARN: Array<{
   points: number;
   label: string;
   color: string;
-  href?: '/qr/escanear';
+  href?: '/qr/escanear' | '/(tabs)/cerca';
 }> = [
   { points: 50, label: 'Check-in con foto', color: colors.verdeHuella },
-  { points: 30, label: 'Reseña verificada', color: colors.verdeParque },
+  {
+    points: 30,
+    label: 'Reseña verificada',
+    color: colors.verdeParque,
+    href: '/(tabs)/cerca',
+  },
   { points: 75, label: 'Huella QR escondida', color: colors.amarilloSolera, href: '/qr/escanear' },
 ];
 
