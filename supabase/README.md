@@ -159,14 +159,16 @@ sí tienen internet normal.
   stats reales (huellas, lugares distintos, reseñas) y sus posts, con botón
   de seguir/dejar de seguir.
 - Notificaciones reales: `app/notificaciones.tsx` — se generan por trigger
-  cuando alguien te sigue o le da like a una huella tuya (nunca insertadas
-  directo por el cliente). La campanita de Inicio ya no es decorativa:
-  navega ahí y muestra un contador de no leídas que se actualiza al volver
-  a la pantalla.
+  cuando alguien te sigue, le da like o comenta una huella tuya (nunca
+  insertadas directo por el cliente). La campanita de Inicio ya no es
+  decorativa: navega ahí y muestra un contador de no leídas que se
+  actualiza al volver a la pantalla.
+- Comentarios reales: `app/comentarios/[postId].tsx` — se abre tocando el
+  ícono de comentario en cualquier post (Comunidad o perfil público);
+  `posts.comments_count` ahora se mantiene sincronizado por trigger, mismo
+  patrón que los likes.
 
 ## Qué falta (opcional, no bloquea la tesis)
 
 - "Agenda" en Perfil muestra un estado "en construcción" honesto — no hay
   feature de agenda todavía ("Siguiendo" en Comunidad ya es real, ver arriba).
-- Los comentarios no existen todavía: `posts.comments_count` se muestra en
-  cada post pero siempre da 0 — el ícono de comentario no es tocable.
