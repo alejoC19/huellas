@@ -158,10 +158,15 @@ sí tienen internet normal.
   el avatar/nombre de cualquier post en Comunidad; muestra mascota, nivel,
   stats reales (huellas, lugares distintos, reseñas) y sus posts, con botón
   de seguir/dejar de seguir.
+- Notificaciones reales: `app/notificaciones.tsx` — se generan por trigger
+  cuando alguien te sigue o le da like a una huella tuya (nunca insertadas
+  directo por el cliente). La campanita de Inicio ya no es decorativa:
+  navega ahí y muestra un contador de no leídas que se actualiza al volver
+  a la pantalla.
 
 ## Qué falta (opcional, no bloquea la tesis)
 
 - "Agenda" en Perfil muestra un estado "en construcción" honesto — no hay
   feature de agenda todavía ("Siguiendo" en Comunidad ya es real, ver arriba).
-- No hay notificaciones (la campanita de Inicio es decorativa) — nadie se
-  entera si lo siguen, le dan like o comentan.
+- Los comentarios no existen todavía: `posts.comments_count` se muestra en
+  cada post pero siempre da 0 — el ícono de comentario no es tocable.
