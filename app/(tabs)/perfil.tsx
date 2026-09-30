@@ -13,6 +13,7 @@ import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { colors, fonts, fontSizes, radii, spacing } from '../../src/theme';
 import { getLevelInfo, LEVELS } from '../../src/utils/levels';
+import { formatDueDate } from '../../src/utils/time';
 
 type Tab = 'recorridos' | 'insignias' | 'favoritos' | 'agenda';
 
@@ -38,6 +39,24 @@ type FavoriteRow = {
   places: { id: string; name: string; neighborhood: string } | null;
 };
 
+type AgendaItem = {
+  id: string;
+  title: string;
+  notes: string;
+  dueDate: string;
+  done: boolean;
+  placeName: string | null;
+};
+
+type AgendaRow = {
+  id: string;
+  title: string;
+  notes: string;
+  due_date: string;
+  done: boolean;
+  places: { name: string } | null;
+};
+
 export default function Perfil() {
   const profile = useAuthStore((state) => state.profile);
   const session = useAuthStore((state) => state.session);
@@ -50,6 +69,7 @@ export default function Perfil() {
   const [stats, setStats] = useState({ huellas: 0, barrios: 0, lugares: 0 });
   const [visits, setVisits] = useState<PlaceVisit[]>([]);
   const [favorites, setFavorites] = useState<FavoritePlace[]>([]);
+  const [agenda, setAgenda] = useState<AgendaItem[]>([]);
 
   const loadFavorites = useCallback(async () => {
     if (!session) return;
@@ -104,20 +124,58 @@ export default function Perfil() {
     setVisits(Array.from(placesById.values()).sort((a, b) => b.count - a.count));
   }, [session]);
 
+  const loadAgenda = useCallback(async () => {
+    if (!session) return;
+
+    const { data } = await supabase
+      .from('agenda_items')
+      .select('id, title, notes, due_date, done, places(name)')
+      .eq('user_id', session.user.id)
+      .order('due_date', { ascending: true });
+
+    const rows = (data ?? []) as unknown as AgendaRow[];
+    setAgenda(
+      rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        notes: row.notes,
+        dueDate: row.due_date,
+        done: row.done,
+        placeName: row.places?.name ?? null,
+      }))
+    );
+  }, [session]);
+
   useEffect(() => {
     if (!session) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    Promise.all([loadVisits(), loadFavorites()]).finally(() => setLoading(false));
-  }, [session, loadVisits, loadFavorites]);
+    Promise.all([loadVisits(), loadFavorites(), loadAgenda()]).finally(() => setLoading(false));
+  }, [session, loadVisits, loadFavorites, loadAgenda]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadVisits(), loadFavorites(), refreshProfile()]);
+    await Promise.all([loadVisits(), loadFavorites(), loadAgenda(), refreshProfile()]);
     setRefreshing(false);
-  }, [loadVisits, loadFavorites, refreshProfile]);
+  }, [loadVisits, loadFavorites, loadAgenda, refreshProfile]);
+
+  const toggleAgendaDone = async (item: AgendaItem) => {
+    const nextDone = !item.done;
+    setAgenda((prev) => prev.map((i) => (i.id === item.id ? { ...i, done: nextDone } : i)));
+    const { error } = await supabase.from('agenda_items').update({ done: nextDone }).eq('id', item.id);
+    if (error) {
+      setAgenda((prev) => prev.map((i) => (i.id === item.id ? { ...i, done: item.done } : i)));
+    }
+  };
+
+  const deleteAgendaItem = async (id: string) => {
+    const previous = agenda;
+    setAgenda((prev) => prev.filter((i) => i.id !== id));
+    const { error } = await supabase.from('agenda_items').delete().eq('id', id);
+    if (error) setAgenda(previous);
+  };
 
   const points = profile?.points ?? 0;
   const { level, nextLevel, pointsToNext } = getLevelInfo(points);
@@ -263,7 +321,40 @@ export default function Perfil() {
                 </View>
               ))}
 
-            {tab === 'agenda' && <EmptyTab text="La agenda está en construcción." />}
+            {tab === 'agenda' && (
+              <View style={styles.list}>
+                {!loading && agenda.length === 0 && (
+                  <EmptyTab text="No tenés recordatorios. Agregá turnos, vacunas o lo que necesites no olvidar." />
+                )}
+                {agenda.map((item) => (
+                  <View key={item.id} style={styles.agendaRow}>
+                    <Pressable
+                      style={[styles.agendaCheck, item.done && styles.agendaCheckDone]}
+                      onPress={() => toggleAgendaDone(item)}
+                      hitSlop={8}
+                    >
+                      {item.done && <Ionicons name="checkmark" size={14} color={colors.white} />}
+                    </Pressable>
+                    <View style={styles.visitInfo}>
+                      <Text style={[styles.visitName, item.done && styles.agendaTitleDone]}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.visitMeta}>
+                        {formatDueDate(item.dueDate)}
+                        {item.placeName ? ` · ${item.placeName}` : ''}
+                      </Text>
+                    </View>
+                    <Pressable onPress={() => deleteAgendaItem(item.id)} hitSlop={8}>
+                      <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                ))}
+                <Pressable style={styles.addAgendaButton} onPress={() => router.push('/agenda/nuevo')}>
+                  <Ionicons name="add" size={16} color={colors.verdeParque} />
+                  <Text style={styles.addAgendaButtonText}>Agregar recordatorio</Text>
+                </Pressable>
+              </View>
+            )}
 
             {nextLevel && (
               <View style={styles.nextLevelCard}>
@@ -496,6 +587,44 @@ const styles = StyleSheet.create({
     fontFamily: fonts.textMedium,
     fontSize: fontSizes.xs,
     color: colors.textMuted,
+  },
+  agendaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  agendaCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.verdeParque,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  agendaCheckDone: {
+    backgroundColor: colors.verdeParque,
+  },
+  agendaTitleDone: {
+    textDecorationLine: 'line-through',
+    color: colors.textMuted,
+  },
+  addAgendaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+  },
+  addAgendaButtonText: {
+    fontFamily: fonts.textSemiBold,
+    fontSize: fontSizes.sm,
+    color: colors.verdeParque,
   },
   badgesGrid: {
     flexDirection: 'row',

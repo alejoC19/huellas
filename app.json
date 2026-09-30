@@ -54,7 +54,8 @@
         {
           "photosPermission": "huellar usa tus fotos para que elijas una imagen de perfil."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
