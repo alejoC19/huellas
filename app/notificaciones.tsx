@@ -18,6 +18,7 @@ type NotificationItem = {
   actorId: string;
   actorName: string;
   actorAvatarUrl: string | null;
+  postId: string | null;
   placeName: string | null;
 };
 
@@ -27,6 +28,7 @@ type NotificationRow = {
   created_at: string;
   read_at: string | null;
   actor_id: string;
+  post_id: string | null;
   profiles: { pet_name: string; avatar_url: string | null } | null;
   posts: { places: { name: string } | null } | null;
 };
@@ -45,7 +47,7 @@ export default function Notificaciones() {
     const { data } = await supabase
       .from('notifications')
       .select(
-        'id, type, created_at, read_at, actor_id, profiles!notifications_actor_id_fkey(pet_name, avatar_url), posts(places(name))'
+        'id, type, created_at, read_at, actor_id, post_id, profiles!notifications_actor_id_fkey(pet_name, avatar_url), posts(places(name))'
       )
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
@@ -61,6 +63,7 @@ export default function Notificaciones() {
         actorId: row.actor_id,
         actorName: row.profiles?.pet_name || 'Alguien',
         actorAvatarUrl: row.profiles?.avatar_url ?? null,
+        postId: row.post_id,
         placeName: row.posts?.places?.name ?? null,
       }))
     );
@@ -80,6 +83,9 @@ export default function Notificaciones() {
     if (item.type === 'follow') return 'empezó a seguirte';
     if (item.type === 'like') {
       return item.placeName ? `le gustó tu huella en ${item.placeName}` : 'le gustó tu huella';
+    }
+    if (item.type === 'comment') {
+      return item.placeName ? `comentó tu huella en ${item.placeName}` : 'comentó tu huella';
     }
     return 'tuvo actividad en tu perfil';
   };
@@ -121,7 +127,13 @@ export default function Notificaciones() {
           renderItem={({ item }) => (
             <Pressable
               style={[styles.row, !item.readAt && styles.rowUnread]}
-              onPress={() => router.push(`/usuario/${item.actorId}`)}
+              onPress={() => {
+                if (item.type !== 'follow' && item.postId) {
+                  router.push(`/comentarios/${item.postId}`);
+                } else {
+                  router.push(`/usuario/${item.actorId}`);
+                }
+              }}
             >
               <Avatar uri={item.actorAvatarUrl} size={40} background={colors.cremaBase} pawColor={colors.azulVereda} />
               <View style={styles.rowText}>

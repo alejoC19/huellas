@@ -26,6 +26,7 @@ type Props = {
   onToggleLike: () => void;
   onViewPlace?: () => void;
   onViewProfile?: () => void;
+  onViewComments?: () => void;
   isOwnPost?: boolean;
   following?: boolean;
   onToggleFollow?: () => void;
@@ -38,6 +39,7 @@ export function PostCard({
   onToggleLike,
   onViewPlace,
   onViewProfile,
+  onViewComments,
   isOwnPost,
   following,
   onToggleFollow,
@@ -87,10 +89,10 @@ export function PostCard({
           <Text style={styles.footerText}>{post.likesCount}</Text>
         </Pressable>
 
-        <View style={styles.footerAction}>
+        <Pressable style={styles.footerAction} onPress={onViewComments}>
           <Ionicons name="chatbubble-outline" size={18} color={colors.textMuted} />
           <Text style={styles.footerText}>{post.commentsCount}</Text>
-        </View>
+        </Pressable>
 
         <Pressable style={styles.viewPlace} onPress={onViewPlace}>
           <Text style={styles.viewPlaceText}>Ver lugar</Text>

@@ -268,6 +268,7 @@ export default function PerfilPublico() {
               liked={likedIds.has(item.id)}
               timeLabel={timeAgo(item.createdAt)}
               onToggleLike={() => toggleLike(item.id)}
+              onViewComments={() => router.push(`/comentarios/${item.id}`)}
               isOwnPost={isOwn}
             />
           )}
