@@ -167,8 +167,15 @@ sí tienen internet normal.
   ícono de comentario en cualquier post (Comunidad o perfil público);
   `posts.comments_count` ahora se mantiene sincronizado por trigger, mismo
   patrón que los likes.
+- Agenda real: `app/agenda/nuevo.tsx` + la pestaña "Agenda" de Perfil —
+  recordatorios personales (turnos, vacunas, lo que sea), 100% privados
+  por usuario, con fecha (date picker nativo), lugar opcional y notas.
 
 ## Qué falta (opcional, no bloquea la tesis)
 
-- "Agenda" en Perfil muestra un estado "en construcción" honesto — no hay
-  feature de agenda todavía ("Siguiendo" en Comunidad ya es real, ver arriba).
+Ningún gap funcional conocido por ahora — todas las pestañas y tiles que
+antes mostraban un estado "en construcción" o decorativo ya tienen una
+feature real detrás. Quedan afuera, por decisión deliberada (no por
+tiempo): notificaciones push (nada empuja al celular si la app está
+cerrada, solo hay badge/lista in-app) y mapa 100% nativo en Android (usa
+Leaflet/WebView en vez de Google Maps — ver el punto 1 arriba).
