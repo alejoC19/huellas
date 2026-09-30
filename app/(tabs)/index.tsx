@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,10 +55,22 @@ const CATEGORY_TILES = [
 
 export default function Home() {
   const profile = useAuthStore((state) => state.profile);
+  const session = useAuthStore((state) => state.session);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadUnreadCount = useCallback(async () => {
+    if (!session) return;
+    const { count } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', session.user.id)
+      .is('read_at', null);
+    setUnreadCount(count ?? 0);
+  }, [session]);
 
   const loadActivity = useCallback(async () => {
     const { data } = await supabase
@@ -87,11 +99,17 @@ export default function Home() {
     loadActivity().finally(() => setLoadingActivity(false));
   }, [loadActivity]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadUnreadCount();
+    }, [loadUnreadCount])
+  );
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadActivity(), refreshProfile()]);
+    await Promise.all([loadActivity(), refreshProfile(), loadUnreadCount()]);
     setRefreshing(false);
-  }, [loadActivity, refreshProfile]);
+  }, [loadActivity, refreshProfile, loadUnreadCount]);
 
   const points = profile?.points ?? 0;
   const { level, levelIndex, nextLevel } = getLevelInfo(points);
@@ -124,8 +142,13 @@ export default function Home() {
                 </Text>
               </View>
             </Pressable>
-            <Pressable style={styles.bellButton}>
+            <Pressable style={styles.bellButton} onPress={() => router.push('/notificaciones')}>
               <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
+              {unreadCount > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </Pressable>
           </View>
 
@@ -234,6 +257,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: '#E38585',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.cremaBase,
+  },
+  bellBadgeText: {
+    fontFamily: fonts.textSemiBold,
+    fontSize: 10,
+    color: colors.white,
   },
   levelCard: {
     gap: spacing.md,
